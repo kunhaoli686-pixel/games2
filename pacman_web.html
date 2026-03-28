@@ -90,6 +90,10 @@
       z-index: 3;
     }
 
+    .sidebar-copy {
+      margin: 8px 0 0;
+    }
+
     .sidebar h1 {
       margin: 0 0 8px;
       font-size: 20px;
@@ -237,6 +241,10 @@
       text-decoration: none;
     }
 
+    .mobile-title {
+      display: none;
+    }
+
     .quick-actions {
       display: flex;
       align-items: center;
@@ -362,69 +370,106 @@
     }
 
     @media (max-width: 780px) {
+      .board-wrap {
+        padding:
+          max(6px, env(safe-area-inset-top))
+          max(6px, env(safe-area-inset-right))
+          max(6px, env(safe-area-inset-bottom))
+          max(6px, env(safe-area-inset-left));
+      }
+
       .sidebar {
-        top: max(10px, env(safe-area-inset-top));
-        left: max(10px, env(safe-area-inset-left));
-        width: calc(100vw - 20px);
-        padding: 12px 14px;
+        top: max(8px, env(safe-area-inset-top));
+        right: max(8px, env(safe-area-inset-right));
+        left: auto;
+        transform: none;
+        width: auto;
+        max-width: none;
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+        background: transparent;
+        backdrop-filter: none;
       }
 
+      .mobile-title,
+      .sidebar-copy,
+      .audio-panel,
+      .compact-hint,
       .sidebar h1 {
-        font-size: 18px;
+        display: none;
       }
 
-      .audio-controls {
-        justify-content: flex-start;
+      .quick-row {
+        gap: 6px;
       }
 
       .touch-panel {
         display: block;
+        left: max(6px, env(safe-area-inset-left));
+        right: max(6px, env(safe-area-inset-right));
+        bottom: max(6px, env(safe-area-inset-bottom));
+        padding: 8px 10px;
+        border-radius: 16px;
       }
 
       canvas {
-        height: min(calc(100dvh - 210px), 100%);
+        height: min(calc(100dvh - 86px), 100%);
+        border-radius: 16px;
+      }
+
+      .back-link {
+        min-height: 32px;
+        padding: 0 10px;
+        font-size: 12px;
+        background: rgba(7, 13, 31, 0.82);
+        border-color: rgba(100, 197, 255, 0.2);
+        backdrop-filter: blur(10px);
+      }
+
+      .quick-actions {
+        gap: 6px;
       }
     }
 
     @media (max-width: 520px) {
-      .board-wrap {
-        padding:
-          max(8px, env(safe-area-inset-top))
-          max(8px, env(safe-area-inset-right))
-          max(8px, env(safe-area-inset-bottom))
-          max(8px, env(safe-area-inset-left));
-      }
-
-      .sidebar p,
-      .sidebar li {
-        font-size: 13px;
-      }
-
-      .audio-panel {
-        padding: 12px;
-      }
-
-      .audio-controls {
-        gap: 10px;
-      }
-
-      .audio-toggle-btn {
-        width: 56px;
-        height: 56px;
-      }
-
       .touch-grid {
-        grid-template-columns: repeat(3, minmax(54px, 1fr));
+        grid-template-columns: repeat(3, minmax(48px, 1fr));
+        gap: 8px;
       }
 
       .touch-btn {
-        min-height: 54px;
-        font-size: 20px;
+        min-height: 46px;
+        font-size: 18px;
+        border-radius: 14px;
       }
 
       canvas {
-        height: min(calc(100dvh - 230px), 100%);
-        border-radius: 18px;
+        height: min(calc(100dvh - 74px), 100%);
+        border-radius: 14px;
+      }
+
+      .back-link {
+        min-height: 30px;
+        padding: 0 9px;
+        font-size: 12px;
+      }
+
+      .touch-title {
+        display: none;
+      }
+
+      .touch-panel {
+        padding: 6px 8px;
+      }
+
+      .touch-actions {
+        margin-top: 6px;
+        gap: 8px;
+      }
+
+      .touch-action-btn {
+        font-size: 13px;
       }
     }
   </style>
@@ -452,13 +497,12 @@
     </div>
     <aside class="sidebar">
       <div class="quick-row">
-        <h1>吃豆人</h1>
         <div class="quick-actions">
           <button class="back-link quick-btn" type="button" id="restartGameBtn">重新游戏</button>
           <a class="back-link" href="index.html">返回主页</a>
         </div>
       </div>
-      <p>现在从主页进入后会直接进入全屏游戏视图。桌面端可用键盘，手机端可用底部触控按钮或滑动操作。</p>
+      <p class="sidebar-copy">现在从主页进入后会直接进入全屏游戏视图。桌面端可用键盘，手机端可用底部触控按钮或滑动操作。</p>
       <div class="audio-panel">
         <div class="audio-title">背景音乐</div>
         <div class="audio-controls">
