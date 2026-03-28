@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>打砖块游戏</title>
     <style>
         * {
@@ -11,9 +11,15 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --app-width: 100vw;
+            --app-height: 100dvh;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
         html, body {
             width: 100%;
-            height: 100%;
+            height: var(--app-height);
         }
 
         body {
@@ -21,26 +27,28 @@
             font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
             overflow: hidden;
             position: relative;
+            overscroll-behavior: none;
         }
 
         #gameCanvas {
             display: block;
-            width: 100vw;
-            height: 100vh;
+            width: var(--app-width);
+            height: var(--app-height);
             cursor: none;
+            touch-action: none;
         }
 
         #uiOverlay {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
+            width: var(--app-width);
+            height: var(--app-height);
             pointer-events: none;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 24px;
+            padding: 24px 24px calc(24px + var(--safe-bottom));
         }
 
         .screen {
@@ -215,6 +223,24 @@
             transform: translateY(-2px) scale(1.01);
         }
 
+        .btn.secondary {
+            background: linear-gradient(180deg, #2c3957 0%, #1d2741 60%, #161d33 100%);
+            border-color: rgba(143, 176, 228, 0.75);
+            color: #d9e5ff;
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+                0 8px 22px rgba(0, 0, 0, 0.3);
+            opacity: 0.95;
+        }
+
+        .btn.secondary:hover {
+            background: linear-gradient(180deg, #34466c 0%, #263554 60%, #1d2a45 100%);
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+                0 0 16px rgba(140, 176, 228, 0.25);
+            transform: translateY(-1px);
+        }
+
         .secondary-hint {
             position: relative;
             z-index: 1;
@@ -336,7 +362,7 @@
 
         @media (max-width: 640px) {
             #uiOverlay {
-                padding: 16px;
+                padding: 12px 12px calc(12px + var(--safe-bottom));
             }
 
             #startScreen,
@@ -344,6 +370,8 @@
             #loseScreen {
                 width: 100%;
                 border-radius: 22px;
+                max-height: calc(var(--app-height) - 24px - var(--safe-bottom));
+                overflow-y: auto;
             }
 
             .btn {
@@ -399,7 +427,7 @@
             <h1>你 赢 了 !</h1>
             <p class="subtitle">恭喜你成功消灭了所有砖块!</p>
             <button class="btn" id="winRestartBtn">再来一局</button>
-            <button class="btn" id="winBackBtn">返回开始界面</button>
+            <button class="btn secondary" id="winBackBtn">返回开始界面</button>
             <div class="secondary-hint">按空格再开一局，按 ESC 返回开始界面</div>
         </div>
 
@@ -407,7 +435,7 @@
             <h1>游戏结束</h1>
             <p class="subtitle">小球全部掉落,再接再厉!</p>
             <button class="btn" id="loseRestartBtn">再来一局</button>
-            <button class="btn" id="loseBackBtn">返回开始界面</button>
+            <button class="btn secondary" id="loseBackBtn">返回开始界面</button>
             <div class="secondary-hint">按空格再试一次，按 ESC 返回开始界面</div>
         </div>
 
@@ -422,6 +450,7 @@
         // 游戏配置
         let SCREEN_WIDTH = window.innerWidth;
         let SCREEN_HEIGHT = window.innerHeight;
+        const MOBILE_BREAKPOINT = 768;
 
         // 游戏状态
         const STATE_START = 0;
@@ -455,9 +484,32 @@
 
         let hintFadeTimer = null;
 
+        function readViewportSize() {
+            const viewport = window.visualViewport;
+            const width = viewport ? viewport.width : window.innerWidth;
+            const height = viewport ? viewport.height : window.innerHeight;
+            return { width: Math.floor(width), height: Math.floor(height) };
+        }
+
+        function isMobileViewport() {
+            return SCREEN_WIDTH <= MOBILE_BREAKPOINT;
+        }
+
+        function getPaddleMetrics() {
+            const width = isMobileViewport()
+                ? Math.min(170, Math.max(92, SCREEN_WIDTH * 0.24))
+                : Math.min(180, Math.max(120, SCREEN_WIDTH * 0.1));
+            const height = isMobileViewport() ? 14 : 15;
+            const bottomGap = isMobileViewport() ? 26 : 24;
+            return { width, height, bottomGap };
+        }
+
         function resizeCanvas() {
-            SCREEN_WIDTH = window.innerWidth;
-            SCREEN_HEIGHT = window.innerHeight;
+            const { width, height } = readViewportSize();
+            SCREEN_WIDTH = width;
+            SCREEN_HEIGHT = height;
+            document.documentElement.style.setProperty('--app-width', `${SCREEN_WIDTH}px`);
+            document.documentElement.style.setProperty('--app-height', `${SCREEN_HEIGHT}px`);
             canvas.width = SCREEN_WIDTH;
             canvas.height = SCREEN_HEIGHT;
         }
@@ -701,10 +753,11 @@
         // 挡板类
         class Paddle {
             constructor() {
-                this.width = 120;
-                this.height = 15;
+                const metrics = getPaddleMetrics();
+                this.width = metrics.width;
+                this.height = metrics.height;
                 this.x = (SCREEN_WIDTH - this.width) / 2;
-                this.y = SCREEN_HEIGHT - 40;
+                this.y = SCREEN_HEIGHT - this.height - metrics.bottomGap;
                 this.speed = 10;
                 this.velocity = 0;
                 this.keyboardActive = false;
@@ -848,11 +901,14 @@
                     particle.dy *= scaleY;
                 });
 
-                this.paddle.width *= scaleX;
-                this.paddle.height *= scaleY;
+                const oldPaddleCenterX = this.paddle.x + this.paddle.width / 2;
+                const metrics = getPaddleMetrics();
+                this.paddle.width = metrics.width;
+                this.paddle.height = metrics.height;
                 this.paddle.x *= scaleX;
-                this.paddle.y = SCREEN_HEIGHT - Math.max(24, 40 * scaleY);
-                this.paddle.speed *= scaleX;
+                this.paddle.x = oldPaddleCenterX * scaleX - this.paddle.width / 2;
+                this.paddle.y = SCREEN_HEIGHT - this.paddle.height - metrics.bottomGap;
+                this.paddle.speed = isMobileViewport() ? 9 : 10;
                 this.paddle.velocity *= scaleX;
 
                 this.paddle.x = Math.max(0, Math.min(SCREEN_WIDTH - this.paddle.width, this.paddle.x));
@@ -1226,7 +1282,7 @@
         const game = new Game();
 
         let resizeRafId = null;
-        window.addEventListener('resize', () => {
+        const scheduleResize = () => {
             if (resizeRafId !== null) return;
             resizeRafId = requestAnimationFrame(() => {
                 resizeRafId = null;
@@ -1236,7 +1292,13 @@
                 game.resize(oldWidth, oldHeight);
                 mouseX = SCREEN_WIDTH / 2;
             });
-        });
+        };
+        window.addEventListener('resize', scheduleResize);
+        window.addEventListener('orientationchange', scheduleResize);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', scheduleResize);
+            window.visualViewport.addEventListener('scroll', scheduleResize);
+        }
 
         // UI 事件绑定
         document.getElementById('startBtn').addEventListener('click', () => {
