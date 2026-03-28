@@ -1351,13 +1351,21 @@
       refreshAudioControls();
     });
 
+    function setPacmanDirection(x, y) {
+      game.audio.ensureStarted();
+      if (game.startScreen) game.startRun(game.selectedStartLevel);
+      if (game.gameOver || game.gameCleared) return;
+      game.pacman.setNextDirection(x, y);
+    }
+
     function triggerGameAction(action) {
-      if (action === "move-up") game.handleKey("ArrowUp");
-      else if (action === "move-down") game.handleKey("ArrowDown");
-      else if (action === "move-left") game.handleKey("ArrowLeft");
-      else if (action === "move-right") game.handleKey("ArrowRight");
+      if (action === "move-up") setPacmanDirection(0, -1);
+      else if (action === "move-down") setPacmanDirection(0, 1);
+      else if (action === "move-left") setPacmanDirection(-1, 0);
+      else if (action === "move-right") setPacmanDirection(1, 0);
       else if (action === "toggle-pause") game.handleKey("p");
       else if (action === "confirm") {
+        game.audio.ensureStarted();
         if (game.startScreen) game.startRun(game.selectedStartLevel);
         else if (game.gameOver || game.gameCleared) game.startRun(game.selectedStartLevel);
       }
@@ -1414,6 +1422,26 @@
 
     canvas.addEventListener("touchstart", () => {
       game.audio.ensureStarted();
+    }, {passive: true});
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    canvas.addEventListener("touchstart", (event) => {
+      const touch = event.touches[0];
+      if (!touch) return;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }, {passive: true});
+
+    canvas.addEventListener("touchend", (event) => {
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      if (Math.abs(deltaX) < 20 && Math.abs(deltaY) < 20) return;
+      if (Math.abs(deltaX) > Math.abs(deltaY)) triggerGameAction(deltaX > 0 ? "move-right" : "move-left");
+      else triggerGameAction(deltaY > 0 ? "move-down" : "move-up");
     }, {passive: true});
 
     let last = 0;
