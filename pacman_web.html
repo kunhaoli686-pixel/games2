@@ -22,6 +22,7 @@
 
     html, body {
       margin: 0;
+      width: 100%;
       min-height: 100%;
       background:
         radial-gradient(circle at top, rgba(39, 91, 255, 0.18), transparent 30%),
@@ -31,48 +32,67 @@
     }
 
     body {
-      display: grid;
-      place-items: center;
-      padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      min-height: 100dvh;
+      overflow: hidden;
     }
 
     .shell {
-      width: min(100%, 1180px);
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 240px;
-      gap: 20px;
-      align-items: start;
+      position: relative;
+      width: 100vw;
+      height: 100dvh;
     }
 
     .board-wrap {
+      position: absolute;
+      inset: 0;
+      padding:
+        max(12px, env(safe-area-inset-top))
+        max(12px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .game-stage {
       position: relative;
-      padding: 16px;
-      border-radius: 28px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
       width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
     }
 
     canvas {
       display: block;
-      width: 100%;
-      height: auto;
-      border-radius: 18px;
+      width: auto;
+      height: min(100%, calc(100dvh - 28px));
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 24px;
       background: #000;
+      border: 1px solid rgba(100, 197, 255, 0.22);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.48);
     }
 
     .sidebar {
-      padding: 18px;
-      border-radius: 24px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      position: fixed;
+      top: max(14px, env(safe-area-inset-top));
+      left: max(14px, env(safe-area-inset-left));
+      right: auto;
+      width: min(320px, calc(100vw - 28px));
+      padding: 14px 16px;
+      border-radius: 22px;
+      background: rgba(7, 13, 31, 0.78);
+      border: 1px solid rgba(100, 197, 255, 0.24);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(12px);
+      z-index: 3;
     }
 
     .sidebar h1 {
-      margin: 0 0 12px;
-      font-size: 24px;
+      margin: 0 0 8px;
+      font-size: 20px;
       color: var(--accent);
       letter-spacing: 0.08em;
     }
@@ -89,27 +109,12 @@
       margin: 10px 0 0;
     }
 
-    .legend {
-      margin-top: 18px;
-      display: grid;
-      gap: 8px;
-    }
-
-    .legend-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
     .audio-panel {
-      margin-top: 18px;
-      padding: 14px;
+      margin-top: 12px;
+      padding: 12px;
       border-radius: 18px;
       background: linear-gradient(180deg, rgba(11, 18, 40, 0.95), rgba(5, 10, 25, 0.96));
-      border: 1px solid rgba(100, 197, 255, 0.22);
-      box-shadow: inset 0 1px 0 rgba(180, 224, 255, 0.08), 0 14px 24px rgba(0, 0, 0, 0.24);
+      border: 1px solid rgba(100, 197, 255, 0.18);
     }
 
     .audio-title {
@@ -211,15 +216,54 @@
       background: currentColor;
     }
 
-    .footer-note {
-      margin-top: 18px;
-      font-size: 12px;
-      color: #7688a8;
+    .quick-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .quick-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .quick-btn {
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .compact-hint {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
     }
 
     .touch-panel {
+      position: fixed;
+      left: max(12px, env(safe-area-inset-left));
+      right: max(12px, env(safe-area-inset-right));
+      bottom: max(12px, env(safe-area-inset-bottom));
+      z-index: 3;
       display: none;
-      margin-top: 16px;
       padding: 14px;
       border-radius: 22px;
       background: linear-gradient(180deg, rgba(9, 15, 35, 0.96), rgba(4, 8, 22, 0.96));
@@ -312,39 +356,21 @@
     }
 
     @media (max-width: 1120px) {
-      .shell {
-        grid-template-columns: 1fr;
-      }
-
       .sidebar {
-        order: 2;
+        width: min(280px, calc(100vw - 28px));
       }
     }
 
     @media (max-width: 780px) {
-      body {
-        display: block;
-      }
-
-      .shell {
-        gap: 14px;
-      }
-
-      .board-wrap,
       .sidebar {
-        border-radius: 22px;
-      }
-
-      .board-wrap {
-        padding: 10px;
-      }
-
-      .sidebar {
-        padding: 16px;
+        top: max(10px, env(safe-area-inset-top));
+        left: max(10px, env(safe-area-inset-left));
+        width: calc(100vw - 20px);
+        padding: 12px 14px;
       }
 
       .sidebar h1 {
-        font-size: 22px;
+        font-size: 18px;
       }
 
       .audio-controls {
@@ -354,19 +380,19 @@
       .touch-panel {
         display: block;
       }
+
+      canvas {
+        height: min(calc(100dvh - 210px), 100%);
+      }
     }
 
     @media (max-width: 520px) {
-      body {
-        padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
-      }
-
-      .shell {
-        width: 100%;
-      }
-
       .board-wrap {
-        padding: 8px;
+        padding:
+          max(8px, env(safe-area-inset-top))
+          max(8px, env(safe-area-inset-right))
+          max(8px, env(safe-area-inset-bottom))
+          max(8px, env(safe-area-inset-left));
       }
 
       .sidebar p,
@@ -395,45 +421,44 @@
         min-height: 54px;
         font-size: 20px;
       }
+
+      canvas {
+        height: min(calc(100dvh - 230px), 100%);
+        border-radius: 18px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="shell">
     <div class="board-wrap">
-      <canvas id="game" width="960" height="1000"></canvas>
-      <div class="touch-panel">
-        <div class="touch-title">移动端控制</div>
-        <div class="touch-grid">
-          <button class="touch-btn touch-up" type="button" data-action="move-up" aria-label="向上移动">▲</button>
-          <button class="touch-btn touch-left" type="button" data-action="move-left" aria-label="向左移动">◀</button>
-          <div class="touch-btn touch-center" aria-hidden="true">MOVE</div>
-          <button class="touch-btn touch-right" type="button" data-action="move-right" aria-label="向右移动">▶</button>
-          <button class="touch-btn touch-down" type="button" data-action="move-down" aria-label="向下移动">▼</button>
-        </div>
-        <div class="touch-actions">
-          <button class="touch-btn touch-action-btn" type="button" data-action="toggle-pause">暂停 / 继续</button>
-          <button class="touch-btn touch-action-btn" type="button" data-action="confirm">开始 / 重开</button>
+      <div class="game-stage">
+        <canvas id="game" width="960" height="1000"></canvas>
+        <div class="touch-panel">
+          <div class="touch-title">移动端控制</div>
+          <div class="touch-grid">
+            <button class="touch-btn touch-up" type="button" data-action="move-up" aria-label="向上移动">▲</button>
+            <button class="touch-btn touch-left" type="button" data-action="move-left" aria-label="向左移动">◀</button>
+            <div class="touch-btn touch-center" aria-hidden="true">MOVE</div>
+            <button class="touch-btn touch-right" type="button" data-action="move-right" aria-label="向右移动">▶</button>
+            <button class="touch-btn touch-down" type="button" data-action="move-down" aria-label="向下移动">▼</button>
+          </div>
+          <div class="touch-actions">
+            <button class="touch-btn touch-action-btn" type="button" data-action="toggle-pause">暂停 / 继续</button>
+            <button class="touch-btn touch-action-btn" type="button" data-action="confirm">开始 / 重开</button>
+          </div>
         </div>
       </div>
     </div>
     <aside class="sidebar">
-      <h1>吃豆人 Web</h1>
-      <p>经典街机玩法已完整移植到浏览器，支持桌面端键盘操作，也支持移动端触控游玩。</p>
-      <ul>
-        <li>方向键 / WASD 移动</li>
-        <li>`1 / 2 / 3` 选择起始关卡</li>
-        <li>`Enter / Space` 开始或重开</li>
-        <li>`P` 暂停</li>
-        <li>手机可使用画面下方触控方向键</li>
-      </ul>
-      <div class="legend">
-        <div class="legend-row"><span class="dot" style="color:#f8f658"></span>吃豆人</div>
-        <div class="legend-row"><span class="dot" style="color:#ff4b4b"></span>红幽灵</div>
-        <div class="legend-row"><span class="dot" style="color:#ffb8ff"></span>粉幽灵</div>
-        <div class="legend-row"><span class="dot" style="color:#3ce7ff"></span>青幽灵</div>
-        <div class="legend-row"><span class="dot" style="color:#ffae44"></span>橙幽灵</div>
+      <div class="quick-row">
+        <h1>吃豆人</h1>
+        <div class="quick-actions">
+          <button class="back-link quick-btn" type="button" id="restartGameBtn">重新游戏</button>
+          <a class="back-link" href="index.html">返回主页</a>
+        </div>
       </div>
+      <p>现在从主页进入后会直接进入全屏游戏视图。桌面端可用键盘，手机端可用底部触控按钮或滑动操作。</p>
       <div class="audio-panel">
         <div class="audio-title">背景音乐</div>
         <div class="audio-controls">
@@ -448,7 +473,7 @@
           </div>
         </div>
       </div>
-      <div class="footer-note">直接双击打开这个 HTML 即可游玩。</div>
+      <div class="compact-hint">方向键 / WASD 移动，`P` 暂停，`Enter` 或空格开始或重开。</div>
     </aside>
   </div>
 
@@ -1322,6 +1347,7 @@
     const audioDownButton = document.getElementById("audio-down");
     const audioUpButton = document.getElementById("audio-up");
     const audioVolumeLabel = document.getElementById("audio-volume");
+    const restartGameButton = document.getElementById("restartGameBtn");
     const touchButtons = document.querySelectorAll("[data-action]");
     const game = new Game(canvas);
 
@@ -1350,6 +1376,11 @@
       game.audio.ensureStarted();
       game.audio.adjustVolume(0.1);
       refreshAudioControls();
+    });
+
+    restartGameButton.addEventListener("click", () => {
+      game.audio.ensureStarted();
+      game.startRun(game.selectedStartLevel);
     });
 
     function setPacmanDirection(x, y) {
