@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>吃豆人网页版</title>
+  <style>
+    :root {
+      --bg: #02030a;
+      --panel: rgba(10, 16, 38, 0.88);
+      --border: rgba(100, 197, 255, 0.36);
+      --accent: #f8f658;
+      --text: #eef4ff;
+      --muted: #9eb2d4;
+      --green: #38d06e;
+      --blue: #3d64ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top, rgba(39, 91, 255, 0.18), transparent 30%),
+        linear-gradient(180deg, #071020 0%, #02030a 100%);
+      color: var(--text);
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    }
+
+    .shell {
+      width: min(100%, 1180px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 240px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .board-wrap {
+      position: relative;
+      padding: 16px;
+      border-radius: 28px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      width: 100%;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 18px;
+      background: #000;
+    }
+
+    .sidebar {
+      padding: 18px;
+      border-radius: 24px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .sidebar h1 {
+      margin: 0 0 12px;
+      font-size: 24px;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+    }
+
+    .sidebar p,
+    .sidebar li {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .sidebar ul {
+      padding-left: 18px;
+      margin: 10px 0 0;
+    }
+
+    .legend {
+      margin-top: 18px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .audio-panel {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(11, 18, 40, 0.95), rgba(5, 10, 25, 0.96));
+      border: 1px solid rgba(100, 197, 255, 0.22);
+      box-shadow: inset 0 1px 0 rgba(180, 224, 255, 0.08), 0 14px 24px rgba(0, 0, 0, 0.24);
+    }
+
+    .audio-title {
+      margin: 0 0 10px;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .audio-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .audio-volume-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .audio-btn {
+      border: 1px solid rgba(123, 205, 255, 0.34);
+      background: radial-gradient(circle at 30% 30%, rgba(66, 104, 215, 0.95), rgba(18, 31, 73, 0.98));
+      color: var(--text);
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 8px 16px rgba(0, 0, 0, 0.28);
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    }
+
+    .audio-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(140, 214, 255, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 18px rgba(0, 0, 0, 0.32);
+      filter: brightness(1.06);
+    }
+
+    .audio-btn:active {
+      transform: translateY(0);
+    }
+
+    .audio-toggle-btn {
+      width: 64px;
+      height: 64px;
+      font-size: 24px;
+      flex: 0 0 auto;
+    }
+
+    .audio-btn-muted {
+      background: radial-gradient(circle at 30% 30%, rgba(88, 96, 122, 0.92), rgba(30, 38, 57, 0.98));
+      border-color: rgba(173, 183, 208, 0.24);
+      color: #d8e0f2;
+    }
+
+    .audio-volume {
+      min-width: 64px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(102, 190, 255, 0.18);
+      background: rgba(3, 8, 22, 0.9);
+      text-align: center;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.45);
+    }
+
+    .audio-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .audio-label {
+      font-size: 12px;
+      color: #97abd0;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      font-size: 12px;
+      color: #7688a8;
+    }
+
+    .touch-panel {
+      display: none;
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(9, 15, 35, 0.96), rgba(4, 8, 22, 0.96));
+      border: 1px solid rgba(100, 197, 255, 0.22);
+      box-shadow: 0 16px 28px rgba(0, 0, 0, 0.28);
+      touch-action: manipulation;
+    }
+
+    .touch-title {
+      margin: 0 0 12px;
+      font-size: 13px;
+      color: #9db2d8;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .touch-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(56px, 72px));
+      grid-template-areas:
+        ". up ."
+        "left center right"
+        ". down .";
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .touch-actions {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .touch-btn {
+      border: 1px solid rgba(120, 205, 255, 0.3);
+      background: radial-gradient(circle at 30% 30%, rgba(55, 90, 192, 0.96), rgba(15, 26, 63, 0.98));
+      color: var(--text);
+      border-radius: 18px;
+      min-height: 58px;
+      padding: 0;
+      font-size: 22px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 10px 20px rgba(0, 0, 0, 0.26);
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .touch-btn:active {
+      transform: scale(0.98);
+      filter: brightness(1.08);
+    }
+
+    .touch-up {
+      grid-area: up;
+    }
+
+    .touch-left {
+      grid-area: left;
+    }
+
+    .touch-center {
+      grid-area: center;
+      background: rgba(10, 16, 38, 0.92);
+      border-style: dashed;
+      font-size: 11px;
+      color: #8fa6d0;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .touch-right {
+      grid-area: right;
+    }
+
+    .touch-down {
+      grid-area: down;
+    }
+
+    .touch-action-btn {
+      border-radius: 16px;
+      font-size: 15px;
+      letter-spacing: 0.04em;
+    }
+
+    @media (max-width: 1120px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        order: 2;
+      }
+    }
+
+    @media (max-width: 780px) {
+      body {
+        display: block;
+      }
+
+      .shell {
+        gap: 14px;
+      }
+
+      .board-wrap,
+      .sidebar {
+        border-radius: 22px;
+      }
+
+      .board-wrap {
+        padding: 10px;
+      }
+
+      .sidebar {
+        padding: 16px;
+      }
+
+      .sidebar h1 {
+        font-size: 22px;
+      }
+
+      .audio-controls {
+        justify-content: flex-start;
+      }
+
+      .touch-panel {
+        display: block;
+      }
+    }
+
+    @media (max-width: 520px) {
+      body {
+        padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+      }
+
+      .shell {
+        width: 100%;
+      }
+
+      .board-wrap {
+        padding: 8px;
+      }
+
+      .sidebar p,
+      .sidebar li {
+        font-size: 13px;
+      }
+
+      .audio-panel {
+        padding: 12px;
+      }
+
+      .audio-controls {
+        gap: 10px;
+      }
+
+      .audio-toggle-btn {
+        width: 56px;
+        height: 56px;
+      }
+
+      .touch-grid {
+        grid-template-columns: repeat(3, minmax(54px, 1fr));
+      }
+
+      .touch-btn {
+        min-height: 54px;
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="board-wrap">
+      <canvas id="game" width="960" height="1000"></canvas>
+      <div class="touch-panel">
+        <div class="touch-title">移动端控制</div>
+        <div class="touch-grid">
+          <button class="touch-btn touch-up" type="button" data-action="move-up" aria-label="向上移动">▲</button>
+          <button class="touch-btn touch-left" type="button" data-action="move-left" aria-label="向左移动">◀</button>
+          <div class="touch-btn touch-center" aria-hidden="true">MOVE</div>
+          <button class="touch-btn touch-right" type="button" data-action="move-right" aria-label="向右移动">▶</button>
+          <button class="touch-btn touch-down" type="button" data-action="move-down" aria-label="向下移动">▼</button>
+        </div>
+        <div class="touch-actions">
+          <button class="touch-btn touch-action-btn" type="button" data-action="toggle-pause">暂停 / 继续</button>
+          <button class="touch-btn touch-action-btn" type="button" data-action="confirm">开始 / 重开</button>
+        </div>
+      </div>
+    </div>
+    <aside class="sidebar">
+      <h1>吃豆人 Web</h1>
+      <p>经典街机玩法已完整移植到浏览器，支持桌面端键盘操作，也支持移动端触控游玩。</p>
+      <ul>
+        <li>方向键 / WASD 移动</li>
+        <li>`1 / 2 / 3` 选择起始关卡</li>
+        <li>`Enter / Space` 开始或重开</li>
+        <li>`P` 暂停</li>
+        <li>手机可使用画面下方触控方向键</li>
+      </ul>
+      <div class="legend">
+        <div class="legend-row"><span class="dot" style="color:#f8f658"></span>吃豆人</div>
+        <div class="legend-row"><span class="dot" style="color:#ff4b4b"></span>红幽灵</div>
+        <div class="legend-row"><span class="dot" style="color:#ffb8ff"></span>粉幽灵</div>
+        <div class="legend-row"><span class="dot" style="color:#3ce7ff"></span>青幽灵</div>
+        <div class="legend-row"><span class="dot" style="color:#ffae44"></span>橙幽灵</div>
+      </div>
+      <div class="audio-panel">
+        <div class="audio-title">背景音乐</div>
+        <div class="audio-controls">
+          <button id="audio-toggle" class="audio-btn audio-toggle-btn" type="button" aria-label="切换背景音乐">🔊</button>
+          <div class="audio-meta">
+            <div class="audio-label">Volume</div>
+            <div id="audio-volume" class="audio-volume">60%</div>
+          </div>
+          <div class="audio-volume-stack">
+            <button id="audio-up" class="audio-btn" type="button" aria-label="增大音量">▲</button>
+            <button id="audio-down" class="audio-btn" type="button" aria-label="减小音量">▼</button>
+          </div>
+        </div>
+      </div>
+      <div class="footer-note">直接双击打开这个 HTML 即可游玩。</div>
+    </aside>
+  </div>
+
+  <script>
+    const WIDTH = 960;
+    const HEIGHT = 1000;
+    const TILE_SIZE = 30;
+    const MAP_COLS = 32;
+    const MAP_ROWS = 29;
+    const FPS = 60;
+    const LEVEL_COUNT = 3;
+
+    const COLORS = {
+      black: "#000000",
+      yellow: "#fff34f",
+      white: "#ffffff",
+      blue: "#2121de",
+      red: "#ff3434",
+      pink: "#ffb8ff",
+      orange: "#ffb852",
+      cyan: "#29f0ff",
+      darkBlue: "#21216f",
+      green: "#38d06e",
+      gray: "#bec6d8"
+    };
+
+    const MAP_TEMPLATE = [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+      [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1,1,1,2,1],
+      [1,3,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1,1,1,3,1],
+      [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1,1,1,2,1],
+      [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+      [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1],
+      [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1],
+      [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1],
+      [1,1,1,1,1,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,2,1,1,1,1],
+      [0,0,0,0,0,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,1,2,1,0,0,0],
+      [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,2,1,0,0,0],
+      [0,0,0,0,0,1,2,1,1,0,5,5,5,5,5,5,5,5,5,0,1,1,1,1,1,1,1,2,1,0,0,0],
+      [0,0,0,0,0,1,2,1,1,0,1,4,4,4,4,4,4,4,4,1,1,1,1,1,1,1,1,2,1,0,0,0],
+      [0,0,0,0,0,1,2,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,0,0,0],
+      [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,2,1,0,0,0],
+      [0,0,0,0,0,1,2,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,0,0,0],
+      [1,1,1,1,1,1,2,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,1,1],
+      [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+      [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1,1,1,2,1],
+      [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1,1,1,2,1],
+      [1,3,2,2,1,1,2,2,2,2,2,2,2,0,0,0,0,2,2,2,2,2,2,2,2,2,1,1,2,2,3,1],
+      [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1,1],
+      [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1,1],
+      [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1],
+      [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,1,1,1,1,2,1],
+      [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,1,1,1,1,2,1],
+      [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    ];
+
+    function cloneMap() {
+      return MAP_TEMPLATE.map(row => [...row]);
+    }
+
+    function applyLevelLayout(level) {
+      const map = cloneMap();
+      const openCells = (cells) => {
+        for (const [x, y] of cells) {
+          if (map[y][x] === 1) map[y][x] = 2;
+        }
+      };
+      if (level === 2) {
+        openCells([[12, 9], [23, 10], [9, 17], [22, 17], [12, 22], [19, 22]]);
+      } else if (level >= 3) {
+        openCells([[12, 9], [23, 10], [9, 17], [22, 17], [12, 22], [19, 22]]);
+        openCells([[7, 6], [24, 6], [7, 16], [11, 14], [20, 14], [14, 17], [17, 17], [10, 24], [21, 24]]);
+      }
+      return map;
+    }
+
+    function levelName(level) {
+      return {1: "经典迷宫", 2: "交错回廊", 3: "高压迷城"}[level] || `第${level}关`;
+    }
+
+    function tileCenter(tx, ty) {
+      return {x: tx * TILE_SIZE + TILE_SIZE / 2, y: ty * TILE_SIZE + TILE_SIZE / 2};
+    }
+
+    class AudioManager {
+      constructor() {
+        this.ctx = null;
+        this.started = false;
+        this.isMuted = false;
+        this.volume = 0.6;
+        this.masterGain = null;
+        this.loopTimer = null;
+      }
+
+      ensureStarted() {
+        if (this.started) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        this.ctx = new AudioCtx();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.connect(this.ctx.destination);
+        this.updateMasterGain();
+        this.started = true;
+        this.playLoop();
+      }
+
+      updateMasterGain() {
+        if (!this.ctx || !this.masterGain) return;
+        const targetVolume = this.isMuted ? 0 : this.volume;
+        this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.masterGain.gain.setTargetAtTime(targetVolume, this.ctx.currentTime, 0.02);
+      }
+
+      toggleMute() {
+        this.isMuted = !this.isMuted;
+        this.updateMasterGain();
+      }
+
+      adjustVolume(delta) {
+        this.volume = Math.max(0, Math.min(1, Math.round((this.volume + delta) * 10) / 10));
+        if (this.volume === 0) this.isMuted = true;
+        else if (this.isMuted) this.isMuted = false;
+        this.updateMasterGain();
+      }
+
+      playLoop() {
+        if (!this.ctx) return;
+        const notes = [
+          ["E4", 0.18], ["G4", 0.18], ["A4", 0.18], ["C5", 0.18],
+          ["B4", 0.18], ["A4", 0.18], ["G4", 0.18], ["E4", 0.18],
+          ["D4", 0.18], ["F4", 0.18], ["G4", 0.18], ["B4", 0.18],
+          ["A4", 0.18], ["G4", 0.18], ["E4", 0.18], ["REST", 0.18]
+        ];
+        const freq = {
+          C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23,
+          G4: 392.0, A4: 440.0, B4: 493.88, C5: 523.25, REST: 0
+        };
+        let when = this.ctx.currentTime + 0.05;
+        for (const [note, duration] of notes) {
+          if (freq[note] > 0) {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "square";
+            osc.frequency.value = freq[note];
+            gain.gain.setValueAtTime(0.0001, when);
+            gain.gain.linearRampToValueAtTime(0.04, when + 0.02);
+            gain.gain.linearRampToValueAtTime(0.0001, when + duration);
+            osc.connect(gain).connect(this.masterGain);
+            osc.start(when);
+            osc.stop(when + duration);
+          }
+          when += duration;
+        }
+        const delay = Math.max(120, (when - this.ctx.currentTime - 0.1) * 1000);
+        this.loopTimer = window.setTimeout(() => this.playLoop(), delay);
+      }
+    }
+
+    class PacMan {
+      constructor(speed = 2.0) {
+        const start = tileCenter(15, 21);
+        this.x = start.x;
+        this.y = start.y;
+        this.radius = TILE_SIZE / 2;
+        this.speed = speed;
+        this.direction = {x: 0, y: 0};
+        this.nextDirection = {x: 0, y: 0};
+        this.turnTolerance = 6;
+        this.turnBufferFrames = 10;
+        this.turnBufferTimer = 0;
+        this.mouthOpen = true;
+        this.mouthTimer = 0;
+      }
+
+      setNextDirection(x, y) {
+        this.nextDirection = {x, y};
+        this.turnBufferTimer = this.turnBufferFrames;
+      }
+
+      currentTileCenter() {
+        return tileCenter(Math.floor(this.x / TILE_SIZE), Math.floor(this.y / TILE_SIZE));
+      }
+
+      isNearTileCenter() {
+        const center = this.currentTileCenter();
+        return Math.abs(this.x - center.x) <= this.turnTolerance && Math.abs(this.y - center.y) <= this.turnTolerance;
+      }
+
+      snapToTurnAxis(dir) {
+        const center = this.currentTileCenter();
+        if (dir.x !== 0) this.y = center.y;
+        if (dir.y !== 0) this.x = center.x;
+      }
+
+      snapToLaneCenter(force = false) {
+        const center = this.currentTileCenter();
+        const lanePull = force ? this.speed : this.speed * 0.8;
+        if (this.direction.x !== 0) {
+          const delta = center.y - this.y;
+          if (Math.abs(delta) <= this.turnTolerance + 2) this.y += Math.max(-lanePull, Math.min(lanePull, delta));
+        } else if (this.direction.y !== 0) {
+          const delta = center.x - this.x;
+          if (Math.abs(delta) <= this.turnTolerance + 2) this.x += Math.max(-lanePull, Math.min(lanePull, delta));
+        }
+      }
+
+      canMoveTo(x, y, map) {
+        const corners = [
+          [x - this.radius + 2, y - this.radius + 2],
+          [x + this.radius - 2, y - this.radius + 2],
+          [x - this.radius + 2, y + this.radius - 2],
+          [x + this.radius - 2, y + this.radius - 2]
+        ];
+        for (const [cx, cy] of corners) {
+          const tx = Math.floor(cx / TILE_SIZE);
+          const ty = Math.floor(cy / TILE_SIZE);
+          if (tx < 0 || tx >= MAP_COLS) continue;
+          if (ty < 0 || ty >= MAP_ROWS) return false;
+          if ([1, 4, 5].includes(map[ty][tx])) return false;
+        }
+        return true;
+      }
+
+      canMoveInDirection(x, y, dir, map) {
+        if (dir.x === 0 && dir.y === 0) return true;
+        return this.canMoveTo(x + dir.x * this.speed, y + dir.y * this.speed, map);
+      }
+
+      canTurn(dir, map) {
+        if (dir.x === 0 && dir.y === 0) return false;
+        if (dir.x === -this.direction.x && dir.y === -this.direction.y) return true;
+        if (dir.x !== 0 && this.direction.y !== 0 && !this.isNearTileCenter()) return false;
+        if (dir.y !== 0 && this.direction.x !== 0 && !this.isNearTileCenter()) return false;
+        const center = this.currentTileCenter();
+        return this.canMoveTo(center.x + dir.x * (this.radius + this.speed + 2), center.y + dir.y * (this.radius + this.speed + 2), map);
+      }
+
+      update(map) {
+        if (this.turnBufferTimer > 0) this.turnBufferTimer -= 1;
+        else if (this.direction.x !== this.nextDirection.x || this.direction.y !== this.nextDirection.y) this.nextDirection = {x: 0, y: 0};
+
+        if ((this.nextDirection.x || this.nextDirection.y) && this.canTurn(this.nextDirection, map)) {
+          this.snapToTurnAxis(this.nextDirection);
+          this.direction = {...this.nextDirection};
+          this.turnBufferTimer = 0;
+        }
+
+        if (this.direction.x === 0 && this.direction.y === 0) {
+          if ((this.nextDirection.x || this.nextDirection.y) && this.canMoveInDirection(this.x, this.y, this.nextDirection, map)) {
+            this.direction = {...this.nextDirection};
+            this.turnBufferTimer = 0;
+          }
+          if (this.direction.x === 0 && this.direction.y === 0) return;
+        }
+
+        this.snapToLaneCenter();
+        const nx = this.x + this.direction.x * this.speed;
+        const ny = this.y + this.direction.y * this.speed;
+        if (this.canMoveTo(nx, ny, map)) {
+          this.x = nx;
+          this.y = ny;
+        } else {
+          this.snapToLaneCenter(true);
+          this.direction = {x: 0, y: 0};
+        }
+
+        if (this.x < -TILE_SIZE) this.x = WIDTH;
+        else if (this.x > WIDTH) this.x = -TILE_SIZE;
+
+        this.y = Math.max(this.radius, Math.min(this.y, MAP_ROWS * TILE_SIZE - this.radius));
+        this.mouthTimer += 1;
+        if (this.mouthTimer >= 6) {
+          this.mouthTimer = 0;
+          this.mouthOpen = !this.mouthOpen;
+        }
+      }
+
+      draw(ctx) {
+        let angle = 0;
+        if (this.direction.y === -1) angle = -Math.PI / 2;
+        else if (this.direction.x === -1) angle = Math.PI;
+        else if (this.direction.y === 1) angle = Math.PI / 2;
+        const mouth = this.mouthOpen ? Math.PI / 6 : Math.PI / 24;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.arc(this.x, this.y, this.radius, angle + mouth, angle + Math.PI * 2 - mouth);
+        ctx.closePath();
+        ctx.fillStyle = COLORS.yellow;
+        ctx.fill();
+        ctx.fillStyle = COLORS.white;
+        ctx.beginPath();
+        ctx.arc(this.x - 3 + this.direction.x, this.y - 6 + this.direction.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = COLORS.black;
+        ctx.beginPath();
+        ctx.arc(this.x - 3 + this.direction.x, this.y - 6 + this.direction.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    class Ghost {
+      constructor(x, y, color, name, speed, personality, aiSkill, turnRandomness, frightenedDuration, frightenedSpeedMultiplier) {
+        const start = tileCenter(x, y);
+        this.startX = start.x;
+        this.startY = start.y;
+        this.x = start.x;
+        this.y = start.y;
+        this.color = color;
+        this.name = name;
+        this.radius = TILE_SIZE / 2;
+        this.personality = personality;
+        this.speed = speed;
+        this.baseSpeed = speed;
+        this.aiSkill = aiSkill;
+        this.turnRandomness = turnRandomness;
+        this.frightenedDuration = frightenedDuration;
+        this.frightenedSpeedMultiplier = frightenedSpeedMultiplier;
+        this.direction = {x: 0, y: 0};
+        this.scared = false;
+        this.scaredTimer = 0;
+        this.active = true;
+        this.respawnTimer = 0;
+      }
+
+      canMove(x, y, map) {
+        const corners = [
+          [x - this.radius + 3, y - this.radius + 3],
+          [x + this.radius - 3, y - this.radius + 3],
+          [x - this.radius + 3, y + this.radius - 3],
+          [x + this.radius - 3, y + this.radius - 3]
+        ];
+        for (const [cx, cy] of corners) {
+          const tx = Math.floor(cx / TILE_SIZE);
+          const ty = Math.floor(cy / TILE_SIZE);
+          if (tx < 0 || tx >= MAP_COLS) continue;
+          if (ty < 0 || ty >= MAP_ROWS) return false;
+          if (map[ty][tx] === 1) return false;
+        }
+        return true;
+      }
+
+      atTileCenter() {
+        return Math.abs((this.x % TILE_SIZE) - TILE_SIZE / 2) < 2 && Math.abs((this.y % TILE_SIZE) - TILE_SIZE / 2) < 2;
+      }
+
+      chooseRandomDirection(map) {
+        const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+        const valid = dirs.filter(([dx,dy]) => {
+          if (dx === -this.direction.x && dy === -this.direction.y) return false;
+          return this.canMove(this.x + dx * TILE_SIZE, this.y + dy * TILE_SIZE, map);
+        });
+        if (valid.length) {
+          const [dx, dy] = valid[Math.floor(Math.random() * valid.length)];
+          this.direction = {x: dx, y: dy};
+        }
+      }
+
+      chooseDirection(pacman, map) {
+        const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+        const valid = dirs.filter(([dx,dy]) => {
+          if (this.direction.x || this.direction.y) {
+            if (dx === -this.direction.x && dy === -this.direction.y) return false;
+          }
+          return this.canMove(this.x + dx * TILE_SIZE, this.y + dy * TILE_SIZE, map);
+        });
+        if (!valid.length) {
+          this.direction = {x: -this.direction.x, y: -this.direction.y};
+          return;
+        }
+
+        if (this.scared) {
+          const farthest = [...valid].sort((a, b) => {
+            const da = (this.x + a[0] * TILE_SIZE - pacman.x) ** 2 + (this.y + a[1] * TILE_SIZE - pacman.y) ** 2;
+            const db = (this.x + b[0] * TILE_SIZE - pacman.x) ** 2 + (this.y + b[1] * TILE_SIZE - pacman.y) ** 2;
+            return db - da;
+          });
+          const [dx, dy] = Math.random() < 0.8 ? farthest[0] : valid[Math.floor(Math.random() * valid.length)];
+          this.direction = {x: dx, y: dy};
+          return;
+        }
+
+        let targetX = pacman.x;
+        let targetY = pacman.y;
+        if (this.personality === "speedy") {
+          const aheadTiles = 4 + Math.round((this.aiSkill - 1) * 4);
+          targetX = pacman.x + pacman.direction.x * TILE_SIZE * aheadTiles;
+          targetY = pacman.y + pacman.direction.y * TILE_SIZE * aheadTiles;
+        } else if (this.personality === "bashful") {
+          const aheadTiles = 2 + Math.round((this.aiSkill - 1) * 3);
+          const aheadX = pacman.x + pacman.direction.x * TILE_SIZE * aheadTiles;
+          const aheadY = pacman.y + pacman.direction.y * TILE_SIZE * aheadTiles;
+          targetX = 2 * aheadX - this.x;
+          targetY = 2 * aheadY - this.y;
+        } else if (this.personality === "pokey") {
+          const dist = Math.hypot(this.x - pacman.x, this.y - pacman.y);
+          const threshold = TILE_SIZE * Math.max(4, 8 - Math.round((this.aiSkill - 1) * 8));
+          if (dist > threshold) {
+            const [dx, dy] = valid[Math.floor(Math.random() * valid.length)];
+            this.direction = {x: dx, y: dy};
+            return;
+          }
+        }
+
+        let best = valid[0];
+        let bestDist = Infinity;
+        for (const [dx, dy] of valid) {
+          const tx = this.x + dx * TILE_SIZE;
+          const ty = this.y + dy * TILE_SIZE;
+          const dist = (tx - targetX) ** 2 + (ty - targetY) ** 2;
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = [dx, dy];
+          }
+        }
+
+        const extraRandomness = Math.max(0.02, 0.2 - (this.aiSkill - 1) * 0.25);
+        if (Math.random() < extraRandomness) {
+          const alternatives = valid.filter(([dx, dy]) => dx !== best[0] || dy !== best[1]);
+          if (alternatives.length) best = alternatives[Math.floor(Math.random() * alternatives.length)];
+        }
+        this.direction = {x: best[0], y: best[1]};
+      }
+
+      makeScared() {
+        this.scared = true;
+        this.scaredTimer = this.frightenedDuration;
+        this.speed = Math.max(this.baseSpeed * this.frightenedSpeedMultiplier, 1);
+      }
+
+      makeUnscared() {
+        this.scared = false;
+        this.scaredTimer = 0;
+        this.speed = this.baseSpeed;
+      }
+
+      die() {
+        this.active = false;
+        this.respawnTimer = 180;
+      }
+
+      update(pacman, map) {
+        if (!this.active) {
+          this.respawnTimer -= 1;
+          if (this.respawnTimer <= 0) {
+            this.active = true;
+            this.x = this.startX;
+            this.y = this.startY;
+            this.direction = {x: 0, y: 0};
+            this.makeUnscared();
+          }
+          return;
+        }
+
+        if (this.scared) {
+          this.scaredTimer -= 1;
+          if (this.scaredTimer <= 0) this.makeUnscared();
+        }
+
+        if (this.direction.x === 0 && this.direction.y === 0) this.chooseDirection(pacman, map);
+        const nx = this.x + this.direction.x * this.speed;
+        const ny = this.y + this.direction.y * this.speed;
+        if (this.canMove(nx, ny, map)) {
+          this.x = nx;
+          this.y = ny;
+        } else {
+          this.chooseDirection(pacman, map);
+        }
+
+        if (this.atTileCenter()) {
+          this.chooseDirection(pacman, map);
+          if (Math.random() < this.turnRandomness) this.chooseRandomDirection(map);
+        }
+
+        if (this.x < -TILE_SIZE) this.x = WIDTH;
+        else if (this.x > WIDTH) this.x = -TILE_SIZE;
+      }
+
+      draw(ctx) {
+        if (!this.active) return;
+        const color = this.scared ? COLORS.blue : this.color;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y - 2, this.radius, Math.PI, 0);
+        ctx.lineTo(this.x + this.radius, this.y + this.radius + 2);
+        for (let i = 0; i < 4; i += 1) {
+          const wx = this.x + this.radius - i * ((this.radius * 2) / 4);
+          ctx.lineTo(wx - 7, this.y + this.radius - (i % 2 === 0 ? -4 : 4));
+        }
+        ctx.closePath();
+        ctx.fill();
+
+        const eyeY = this.y - 5;
+        const leftX = this.x - 5;
+        const rightX = this.x + 5;
+        ctx.fillStyle = COLORS.white;
+        ctx.beginPath();
+        ctx.arc(leftX, eyeY, 5, 0, Math.PI * 2);
+        ctx.arc(rightX, eyeY, 5, 0, Math.PI * 2);
+        ctx.fill();
+        if (!this.scared) {
+          ctx.fillStyle = COLORS.blue;
+          ctx.beginPath();
+          ctx.arc(leftX + this.direction.x * 2, eyeY + this.direction.y * 2, 2, 0, Math.PI * 2);
+          ctx.arc(rightX + this.direction.x * 2, eyeY + this.direction.y * 2, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    class Game {
+      constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext("2d");
+        this.audio = new AudioManager();
+        this.score = 0;
+        this.lives = 3;
+        this.level = 1;
+        this.selectedStartLevel = 1;
+        this.gameOver = false;
+        this.gameCleared = false;
+        this.paused = false;
+        this.startScreen = true;
+        this.hitCooldown = 0;
+        this.levelBannerTimer = 120;
+        this.poweredUp = false;
+        this.powerTimer = 0;
+        this.mouse = {x: 0, y: 0};
+        this.startLevel(true);
+      }
+
+      getStartCardRects() {
+        const rects = [];
+        const y = 420;
+        for (let i = 0; i < LEVEL_COUNT; i += 1) rects.push({level: i + 1, x: 155 + i * 220, y, w: 190, h: 135});
+        return rects;
+      }
+
+      getStartButtonRect() {
+        return {x: WIDTH / 2 - 170, y: 730, w: 340, h: 62};
+      }
+
+      startRun(startLevel) {
+        this.audio.ensureStarted();
+        this.selectedStartLevel = Math.max(1, Math.min(LEVEL_COUNT, startLevel));
+        this.startScreen = false;
+        this.paused = false;
+        this.startLevel(true);
+      }
+
+      startLevel(resetScore = false) {
+        if (resetScore) {
+          this.score = 0;
+          this.lives = 3;
+          this.level = this.selectedStartLevel;
+          this.gameOver = false;
+          this.gameCleared = false;
+        }
+        this.map = applyLevelLayout(this.level);
+        this.dotsEaten = 0;
+        this.totalDots = this.map.flat().filter(v => v === 2 || v === 3).length;
+        this.poweredUp = false;
+        this.powerTimer = 0;
+        this.levelBannerTimer = 120;
+        const levelSettings = {
+          1: {pacSpeed: 2.0, ghostSpeed: 1.45, aiSkill: 1.0, turnRandomness: 0.14, frightenedDuration: 300, frightenedSpeedMultiplier: 0.52},
+          2: {pacSpeed: 2.12, ghostSpeed: 1.62, aiSkill: 1.12, turnRandomness: 0.10, frightenedDuration: 260, frightenedSpeedMultiplier: 0.50},
+          3: {pacSpeed: 2.18, ghostSpeed: 1.90, aiSkill: 1.35, turnRandomness: 0.04, frightenedDuration: 210, frightenedSpeedMultiplier: 0.45}
+        };
+        this.settings = levelSettings[this.level];
+        this.pacman = new PacMan(this.settings.pacSpeed);
+        this.ghosts = [
+          new Ghost(13, 13, COLORS.red, "红", this.settings.ghostSpeed, "shadow", this.settings.aiSkill, this.settings.turnRandomness, this.settings.frightenedDuration, this.settings.frightenedSpeedMultiplier),
+          new Ghost(14, 13, COLORS.pink, "粉", this.settings.ghostSpeed, "speedy", this.settings.aiSkill, this.settings.turnRandomness, this.settings.frightenedDuration, this.settings.frightenedSpeedMultiplier),
+          new Ghost(15, 13, COLORS.cyan, "青", this.settings.ghostSpeed, "bashful", this.settings.aiSkill, this.settings.turnRandomness, this.settings.frightenedDuration, this.settings.frightenedSpeedMultiplier),
+          new Ghost(16, 13, COLORS.orange, "橙", this.settings.ghostSpeed, "pokey", this.settings.aiSkill, this.settings.turnRandomness, this.settings.frightenedDuration, this.settings.frightenedSpeedMultiplier)
+        ];
+      }
+
+      resetPositions() {
+        const start = tileCenter(15, 21);
+        this.pacman.x = start.x;
+        this.pacman.y = start.y;
+        this.pacman.direction = {x: 0, y: 0};
+        this.pacman.nextDirection = {x: 0, y: 0};
+        this.pacman.turnBufferTimer = 0;
+        for (const ghost of this.ghosts) {
+          ghost.x = ghost.startX;
+          ghost.y = ghost.startY;
+          ghost.direction = {x: 0, y: 0};
+          ghost.active = true;
+          ghost.makeUnscared();
+        }
+      }
+
+      handleKey(key) {
+        if (this.startScreen) {
+          if (["1", "2", "3"].includes(key)) this.selectedStartLevel = Number(key);
+          return;
+        }
+        if (key === "ArrowUp" || key === "w") this.pacman.setNextDirection(0, -1);
+        else if (key === "ArrowDown" || key === "s") this.pacman.setNextDirection(0, 1);
+        else if (key === "ArrowLeft" || key === "a") this.pacman.setNextDirection(-1, 0);
+        else if (key === "ArrowRight" || key === "d") this.pacman.setNextDirection(1, 0);
+        else if (key === "p") this.paused = !this.paused;
+      }
+
+      update() {
+        if (this.startScreen || this.gameOver || this.gameCleared || this.paused) return;
+        if (this.levelBannerTimer > 0) {
+          this.levelBannerTimer -= 1;
+          return;
+        }
+        if (this.hitCooldown > 0) this.hitCooldown -= 1;
+        this.pacman.update(this.map);
+        for (const ghost of this.ghosts) ghost.update(this.pacman, this.map);
+        this.checkDots();
+        this.checkGhostCollision();
+        if (this.poweredUp) {
+          this.powerTimer -= 1;
+          if (this.powerTimer <= 0) {
+            this.poweredUp = false;
+            for (const ghost of this.ghosts) ghost.makeUnscared();
+          }
+        }
+        if (this.dotsEaten >= this.totalDots) {
+          if (this.level >= LEVEL_COUNT) this.gameCleared = true;
+          else {
+            this.level += 1;
+            this.startLevel(false);
+          }
+        }
+      }
+
+      checkDots() {
+        const tx = Math.floor(this.pacman.x / TILE_SIZE);
+        const ty = Math.floor(this.pacman.y / TILE_SIZE);
+        if (tx < 0 || tx >= MAP_COLS || ty < 0 || ty >= MAP_ROWS) return;
+        const tile = this.map[ty][tx];
+        if (tile === 2) {
+          this.map[ty][tx] = 0;
+          this.score += 10;
+          this.dotsEaten += 1;
+        } else if (tile === 3) {
+          this.map[ty][tx] = 0;
+          this.score += 50;
+          this.dotsEaten += 1;
+          this.poweredUp = true;
+          this.powerTimer = this.settings.frightenedDuration;
+          for (const ghost of this.ghosts) if (ghost.active) ghost.makeScared();
+        }
+      }
+
+      checkGhostCollision() {
+        if (this.hitCooldown > 0) return;
+        for (const ghost of this.ghosts) {
+          if (!ghost.active) continue;
+          const dist = Math.hypot(this.pacman.x - ghost.x, this.pacman.y - ghost.y);
+          if (dist < this.pacman.radius + ghost.radius - 4) {
+            if (ghost.scared) {
+              this.score += 200;
+              ghost.die();
+            } else {
+              this.lives -= 1;
+              if (this.lives <= 0) this.gameOver = true;
+              else {
+                this.resetPositions();
+                this.hitCooldown = 90;
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      drawMap() {
+        for (let y = 0; y < this.map.length; y += 1) {
+          for (let x = 0; x < this.map[y].length; x += 1) {
+            const tile = this.map[y][x];
+            const px = x * TILE_SIZE;
+            const py = y * TILE_SIZE;
+            if (tile === 1) {
+              this.ctx.fillStyle = COLORS.darkBlue;
+              this.ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+              this.ctx.strokeStyle = COLORS.blue;
+              this.ctx.lineWidth = 2;
+              this.ctx.strokeRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+            } else if (tile === 2) {
+              this.ctx.fillStyle = COLORS.white;
+              this.ctx.beginPath();
+              this.ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, 3, 0, Math.PI * 2);
+              this.ctx.fill();
+            } else if (tile === 3) {
+              this.ctx.fillStyle = COLORS.white;
+              this.ctx.beginPath();
+              this.ctx.arc(px + TILE_SIZE / 2, py + TILE_SIZE / 2, 6, 0, Math.PI * 2);
+              this.ctx.fill();
+            }
+          }
+        }
+      }
+
+      drawUI() {
+        this.ctx.fillStyle = COLORS.white;
+        this.ctx.font = "32px PingFang SC, Microsoft YaHei, sans-serif";
+        this.ctx.fillText(`分数: ${this.score}`, 12, HEIGHT - 20);
+        this.ctx.fillText(`生命: ${this.lives}`, WIDTH - 140, HEIGHT - 20);
+        this.ctx.fillText(`关卡: ${this.level}/${LEVEL_COUNT}`, WIDTH / 2 - 80, HEIGHT - 20);
+        this.ctx.font = "24px PingFang SC, Microsoft YaHei, sans-serif";
+        this.ctx.fillStyle = COLORS.green;
+        this.ctx.fillText(levelName(this.level), WIDTH / 2 - 56, HEIGHT - 52);
+        this.ctx.fillStyle = COLORS.gray;
+        this.ctx.fillText("方向/WASD 移动  P 暂停  Enter/Space 开始", 12, HEIGHT - 52);
+      }
+
+      drawCenterText(text, color, subtext = "") {
+        this.ctx.fillStyle = "rgba(0,0,0,0.72)";
+        this.ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        this.ctx.fillStyle = color;
+        this.ctx.font = "72px PingFang SC, Microsoft YaHei, sans-serif";
+        this.ctx.textAlign = "center";
+        this.ctx.fillText(text, WIDTH / 2, HEIGHT / 2 - 30);
+        if (subtext) {
+          this.ctx.font = "28px PingFang SC, Microsoft YaHei, sans-serif";
+          this.ctx.fillStyle = COLORS.white;
+          this.ctx.fillText(subtext, WIDTH / 2, HEIGHT / 2 + 34);
+        }
+        this.ctx.textAlign = "start";
+      }
+
+      drawStartScreen() {
+        const pulse = Math.floor(performance.now() / 450) % 2;
+        const ctx = this.ctx;
+        for (let y = 0; y < HEIGHT; y += 1) {
+          const mix = y / HEIGHT;
+          const color = `rgb(${Math.round(8 * (1 - mix) + 2 * mix)}, ${Math.round(12 * (1 - mix) + 2 * mix)}, ${Math.round(30 * (1 - mix) + 10 * mix)})`;
+          ctx.strokeStyle = color;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(WIDTH, y);
+          ctx.stroke();
+        }
+        for (let x = 0; x < WIDTH; x += TILE_SIZE) {
+          ctx.strokeStyle = "rgba(40,70,150,0.24)";
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, HEIGHT);
+          ctx.stroke();
+        }
+        for (let y = 0; y < HEIGHT; y += TILE_SIZE) {
+          ctx.strokeStyle = "rgba(28,40,92,0.26)";
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(WIDTH, y);
+          ctx.stroke();
+        }
+        const panel = {x: WIDTH / 2 - 330, y: 120, w: 660, h: 690};
+        ctx.fillStyle = "rgba(0,0,0,0.45)";
+        roundRect(ctx, panel.x, panel.y + 10, panel.w, panel.h, 28, true, false);
+        ctx.fillStyle = "rgba(14,22,54,0.96)";
+        ctx.strokeStyle = COLORS.blue;
+        roundRect(ctx, panel.x, panel.y, panel.w, panel.h, 28, true, true);
+        ctx.lineWidth = 3;
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = COLORS.yellow;
+        ctx.font = "72px PingFang SC, Microsoft YaHei, sans-serif";
+        ctx.fillText("吃豆人", WIDTH / 2, 220);
+        ctx.fillStyle = COLORS.white;
+        ctx.font = "32px PingFang SC, Microsoft YaHei, sans-serif";
+        ctx.fillText("PAC-MAN · Arcade Edition", WIDTH / 2, 278);
+        ctx.fillStyle = "#b6d2ff";
+        ctx.font = "24px PingFang SC, Microsoft YaHei, sans-serif";
+        ctx.fillText("经典街机玩法，三阶段迷宫挑战，浏览器即开即玩", WIDTH / 2, 320);
+
+        this.drawDecorPacman(WIDTH / 2 - 150, 365, 0);
+        this.drawDecorPacman(WIDTH / 2 + 150, 365, Math.PI);
+
+        const specs = [
+          ["1", "经典迷宫", "标准节奏", COLORS.green],
+          ["2", "交错回廊", "进阶路线", COLORS.cyan],
+          ["3", "高压迷城", "高强度追逐", COLORS.orange]
+        ];
+        for (let i = 0; i < this.getStartCardRects().length; i += 1) {
+          const rect = this.getStartCardRects()[i];
+          const [num, name, desc, accent] = specs[i];
+          const hovered = pointInRect(this.mouse.x, this.mouse.y, rect);
+          const selected = rect.level === this.selectedStartLevel;
+          ctx.fillStyle = selected ? "rgba(24,46,104,0.95)" : hovered ? "rgba(20,32,74,0.95)" : "rgba(10,16,42,0.95)";
+          ctx.strokeStyle = selected ? COLORS.yellow : accent;
+          roundRect(ctx, rect.x, rect.y, rect.w, rect.h, 18, true, true);
+          ctx.fillStyle = accent;
+          ctx.font = "32px PingFang SC, Microsoft YaHei, sans-serif";
+          ctx.fillText(num, rect.x + rect.w / 2, rect.y + 40);
+          ctx.fillStyle = COLORS.white;
+          ctx.font = "24px PingFang SC, Microsoft YaHei, sans-serif";
+          ctx.fillText(name, rect.x + rect.w / 2, rect.y + 72);
+          ctx.fillStyle = "#b0bdd8";
+          ctx.font = "20px PingFang SC, Microsoft YaHei, sans-serif";
+          ctx.fillText(desc, rect.x + rect.w / 2, rect.y + 102);
+          if (selected) {
+            ctx.fillStyle = COLORS.yellow;
+            ctx.font = "18px PingFang SC, Microsoft YaHei, sans-serif";
+            ctx.fillText("已选择", rect.x + rect.w / 2, rect.y + rect.h - 16);
+          }
+        }
+
+        ctx.fillStyle = "#d5def0";
+        ctx.font = "24px PingFang SC, Microsoft YaHei, sans-serif";
+        ctx.fillText("选择起始关卡，或使用 1 / 2 / 3 快速切换", WIDTH / 2, 594);
+        ctx.fillText("从所选关卡开始，依次完成后续全部挑战", WIDTH / 2, 626);
+        ctx.fillText("按下开始后将自动进入游戏，并启用背景音乐", WIDTH / 2, 658);
+
+        const button = this.getStartButtonRect();
+        ctx.fillStyle = pulse === 0 ? "#2ca35c" : "#39bf71";
+        ctx.strokeStyle = COLORS.white;
+        roundRect(ctx, button.x, button.y, button.w, button.h, 20, true, true);
+        ctx.fillStyle = COLORS.white;
+        ctx.font = "32px PingFang SC, Microsoft YaHei, sans-serif";
+        ctx.fillText(`开始第 ${this.selectedStartLevel} 关`, button.x + button.w / 2, button.y + 41);
+        ctx.textAlign = "start";
+      }
+
+      drawDecorPacman(x, y, angle) {
+        this.ctx.fillStyle = COLORS.yellow;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, y);
+        this.ctx.arc(x, y, 25, angle + Math.PI / 7, angle + Math.PI * 2 - Math.PI / 7);
+        this.ctx.closePath();
+        this.ctx.fill();
+      }
+
+      draw() {
+        this.ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        this.ctx.fillStyle = COLORS.black;
+        this.ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        if (this.startScreen) {
+          this.drawStartScreen();
+          return;
+        }
+        this.drawMap();
+        this.pacman.draw(this.ctx);
+        for (const ghost of this.ghosts) ghost.draw(this.ctx);
+        this.drawUI();
+        if (this.paused && !this.gameOver) this.drawCenterText("暂停中", COLORS.white);
+        else if (this.gameOver) this.drawCenterText("游戏结束", COLORS.red, `最终得分: ${this.score} · 按 Enter/Space 重开`);
+        else if (this.gameCleared) this.drawCenterText("三关通关!", COLORS.yellow, `最终得分: ${this.score} · 按 Enter/Space 再来一局`);
+        else if (this.levelBannerTimer > 0) this.drawCenterText(`第 ${this.level} 关`, COLORS.green, levelName(this.level));
+      }
+    }
+
+    function pointInRect(x, y, rect) {
+      return x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h;
+    }
+
+    function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+
+    const canvas = document.getElementById("game");
+    const audioToggleButton = document.getElementById("audio-toggle");
+    const audioDownButton = document.getElementById("audio-down");
+    const audioUpButton = document.getElementById("audio-up");
+    const audioVolumeLabel = document.getElementById("audio-volume");
+    const touchButtons = document.querySelectorAll("[data-action]");
+    const game = new Game(canvas);
+
+    function refreshAudioControls() {
+      const isMuted = game.audio.isMuted;
+      audioToggleButton.textContent = isMuted ? "🔇" : "🔊";
+      audioToggleButton.classList.toggle("audio-btn-muted", isMuted);
+      audioToggleButton.setAttribute("aria-label", isMuted ? "开启背景音乐" : "关闭背景音乐");
+      audioToggleButton.title = isMuted ? "开启背景音乐" : "关闭背景音乐";
+      audioVolumeLabel.textContent = `${Math.round(game.audio.volume * 100)}%`;
+    }
+
+    audioToggleButton.addEventListener("click", () => {
+      game.audio.ensureStarted();
+      game.audio.toggleMute();
+      refreshAudioControls();
+    });
+
+    audioDownButton.addEventListener("click", () => {
+      game.audio.ensureStarted();
+      game.audio.adjustVolume(-0.1);
+      refreshAudioControls();
+    });
+
+    audioUpButton.addEventListener("click", () => {
+      game.audio.ensureStarted();
+      game.audio.adjustVolume(0.1);
+      refreshAudioControls();
+    });
+
+    function triggerGameAction(action) {
+      if (action === "move-up") game.handleKey("ArrowUp");
+      else if (action === "move-down") game.handleKey("ArrowDown");
+      else if (action === "move-left") game.handleKey("ArrowLeft");
+      else if (action === "move-right") game.handleKey("ArrowRight");
+      else if (action === "toggle-pause") game.handleKey("p");
+      else if (action === "confirm") {
+        if (game.startScreen) game.startRun(game.selectedStartLevel);
+        else if (game.gameOver || game.gameCleared) game.startRun(game.selectedStartLevel);
+      }
+    }
+
+    for (const button of touchButtons) {
+      const action = button.dataset.action;
+      if (!action) continue;
+      button.addEventListener("click", () => triggerGameAction(action));
+      button.addEventListener("touchstart", (event) => {
+        event.preventDefault();
+        triggerGameAction(action);
+      }, {passive: false});
+    }
+
+    refreshAudioControls();
+
+    window.addEventListener("keydown", (event) => {
+      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) event.preventDefault();
+      if (event.key === "Escape") return;
+      if (["Enter", " ", "NumpadEnter"].includes(event.key)) {
+        if (game.startScreen) game.startRun(game.selectedStartLevel);
+        else if (game.gameOver || game.gameCleared) game.startRun(game.selectedStartLevel);
+        return;
+      }
+      game.handleKey(key);
+    });
+
+    canvas.addEventListener("mousemove", (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      game.mouse.x = (event.clientX - rect.left) * scaleX;
+      game.mouse.y = (event.clientY - rect.top) * scaleY;
+    });
+
+    canvas.addEventListener("click", (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (event.clientX - rect.left) * scaleX;
+      const y = (event.clientY - rect.top) * scaleY;
+      if (game.startScreen) {
+        for (const card of game.getStartCardRects()) {
+          if (pointInRect(x, y, card)) {
+            game.selectedStartLevel = card.level;
+            return;
+          }
+        }
+        if (pointInRect(x, y, game.getStartButtonRect())) game.startRun(game.selectedStartLevel);
+      }
+    });
+
+    canvas.addEventListener("touchstart", () => {
+      game.audio.ensureStarted();
+    }, {passive: true});
+
+    let last = 0;
+    function frame(ts) {
+      if (!last || ts - last >= 1000 / FPS) {
+        game.update();
+        game.draw();
+        last = ts;
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
