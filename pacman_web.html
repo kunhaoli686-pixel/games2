@@ -269,6 +269,7 @@
       justify-content: center;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 10px 20px rgba(0, 0, 0, 0.26);
       touch-action: manipulation;
+      pointer-events: auto;
       user-select: none;
       -webkit-user-select: none;
     }
@@ -1355,6 +1356,7 @@
       game.audio.ensureStarted();
       if (game.startScreen) game.startRun(game.selectedStartLevel);
       if (game.gameOver || game.gameCleared) return;
+      if (game.paused) game.paused = false;
       game.pacman.setNextDirection(x, y);
     }
 
@@ -1375,6 +1377,10 @@
       const action = button.dataset.action;
       if (!action) continue;
       button.addEventListener("click", () => triggerGameAction(action));
+      button.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        triggerGameAction(action);
+      });
       button.addEventListener("touchstart", (event) => {
         event.preventDefault();
         triggerGameAction(action);
