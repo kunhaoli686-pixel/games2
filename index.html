@@ -399,6 +399,7 @@
             <h1>你 赢 了 !</h1>
             <p class="subtitle">恭喜你成功消灭了所有砖块!</p>
             <button class="btn" id="winRestartBtn">再来一局</button>
+            <button class="btn" id="winBackBtn">返回开始界面</button>
             <div class="secondary-hint">按空格再开一局，按 ESC 返回开始界面</div>
         </div>
 
@@ -406,6 +407,7 @@
             <h1>游戏结束</h1>
             <p class="subtitle">小球全部掉落,再接再厉!</p>
             <button class="btn" id="loseRestartBtn">再来一局</button>
+            <button class="btn" id="loseBackBtn">返回开始界面</button>
             <div class="secondary-hint">按空格再试一次，按 ESC 返回开始界面</div>
         </div>
 
@@ -1258,6 +1260,16 @@
             showHint(true);
             document.getElementById('winScreen').classList.remove('active');
             document.getElementById('loseScreen').classList.remove('active');
+        });
+
+        document.getElementById('winBackBtn').addEventListener('click', () => {
+            soundManager.playClick();
+            game.exitToStart();
+        });
+
+        document.getElementById('loseBackBtn').addEventListener('click', () => {
+            soundManager.playClick();
+            game.exitToStart();
         });
 
         // 键盘事件
