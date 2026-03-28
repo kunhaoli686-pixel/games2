@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>贪吃蛇游戏</title>
+  <style>
+    :root {
+      --bg: #07131a;
+      --bg-deep: #02060a;
+      --panel: rgba(9, 20, 29, 0.9);
+      --line: rgba(137, 255, 193, 0.16);
+      --text: #effff4;
+      --muted: #9fb6aa;
+      --accent: #7df9b6;
+      --accent-2: #caff64;
+      --danger: #ff6678;
+      --grid: rgba(255, 255, 255, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      color: var(--text);
+      font-family: "Trebuchet MS", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(125, 249, 182, 0.12), transparent 28%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+      padding:
+        max(16px, env(safe-area-inset-top))
+        max(16px, env(safe-area-inset-right))
+        max(16px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left));
+    }
+
+    .shell {
+      width: min(1200px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+    }
+
+    .game-panel {
+      padding: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing: 0.04em;
+    }
+
+    .title-wrap p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .nav-link,
+    .action-btn,
+    .touch-btn {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      border-radius: 16px;
+      text-decoration: none;
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .nav-link,
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .nav-link:hover,
+    .nav-link:focus-visible,
+    .action-btn:hover,
+    .action-btn:focus-visible,
+    .touch-btn:hover,
+    .touch-btn:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(125, 249, 182, 0.42);
+      background: rgba(17, 43, 31, 0.86);
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .stat-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: clamp(18px, 2.8vw, 28px);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      padding: 14px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(8, 17, 23, 0.96), rgba(3, 9, 12, 0.98));
+      border: 1px solid rgba(125, 249, 182, 0.14);
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 3 / 2;
+      margin: 0 auto;
+      background: #000;
+      border-radius: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.14);
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 14px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 20px;
+      pointer-events: none;
+    }
+
+    .overlay.show {
+      display: flex;
+    }
+
+    .overlay-card {
+      min-width: min(90%, 380px);
+      padding: 20px 22px;
+      border-radius: 18px;
+      background: rgba(8, 18, 24, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.24);
+    }
+
+    .overlay-card h2 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 4vw, 44px);
+    }
+
+    .overlay-card p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .touch-panel {
+      display: none;
+      margin-top: 16px;
+      gap: 12px;
+    }
+
+    .touch-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(58px, 74px));
+      grid-template-areas:
+        ". up ."
+        "left down right";
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .touch-up { grid-area: up; }
+    .touch-left { grid-area: left; }
+    .touch-down { grid-area: down; }
+    .touch-right { grid-area: right; }
+
+    .touch-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .touch-btn {
+      min-height: 58px;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .touch-action-btn {
+      font-size: 15px;
+      padding: 0 12px;
+      letter-spacing: 0.04em;
+    }
+
+    .side-panel {
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .side-panel h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .side-panel p,
+    .side-panel li {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .side-panel ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .mode-panel {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mode-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .mode-btn {
+      min-height: 48px;
+      padding: 0 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #042214;
+      border-color: transparent;
+      box-shadow: 0 12px 24px rgba(125, 249, 182, 0.18);
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #042214;
+      border-color: transparent;
+    }
+
+    .notice {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .notice strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--accent-2);
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        order: -1;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .game-panel,
+      .side-panel {
+        padding: 16px;
+        border-radius: 22px;
+      }
+
+      .hud {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .touch-panel {
+        display: grid;
+      }
+
+      .action-row {
+        grid-template-columns: 1fr;
+      }
+
+      .mode-options {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      body {
+        padding:
+          max(10px, env(safe-area-inset-top))
+          max(10px, env(safe-area-inset-right))
+          max(12px, env(safe-area-inset-bottom))
+          max(10px, env(safe-area-inset-left));
+      }
+
+      .topbar {
+        align-items: stretch;
+      }
+
+      .nav-link,
+      .action-btn {
+        width: 100%;
+      }
+
+      .canvas-wrap {
+        padding: 10px;
+      }
+
+      .overlay {
+        inset: 10px;
+      }
+
+      .touch-grid {
+        grid-template-columns: repeat(3, minmax(54px, 1fr));
+      }
+
+      .touch-btn {
+        min-height: 54px;
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="panel game-panel">
+      <div class="topbar">
+        <div class="title-wrap">
+          <h1>贪吃蛇游戏</h1>
+          <p>基于 `snake_game_v2.py` 改写的网页版本，支持“穿墙模式”和“经典模式”自由切换。</p>
+        </div>
+        <a class="nav-link" href="index.html">返回主页</a>
+      </div>
+
+      <div class="hud">
+        <div class="stat">
+          <span class="stat-label">分数</span>
+          <span class="stat-value" id="scoreValue">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">长度</span>
+          <span class="stat-value" id="lengthValue">3</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">模式</span>
+          <span class="stat-value" id="modeValue">穿墙</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">状态</span>
+          <span class="stat-value" id="stateValue">进行中</span>
+        </div>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="game" width="1200" height="800" aria-label="贪吃蛇游戏画布"></canvas>
+        <div class="overlay" id="overlay">
+          <div class="overlay-card">
+            <h2 id="overlayTitle">游戏暂停</h2>
+            <p id="overlayText">按 `P` 键或使用页面按钮继续游戏。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="touch-panel">
+        <div class="touch-grid">
+          <button class="touch-btn touch-up" type="button" data-dir="up" aria-label="向上">▲</button>
+          <button class="touch-btn touch-left" type="button" data-dir="left" aria-label="向左">◀</button>
+          <button class="touch-btn touch-down" type="button" data-dir="down" aria-label="向下">▼</button>
+          <button class="touch-btn touch-right" type="button" data-dir="right" aria-label="向右">▶</button>
+        </div>
+        <div class="touch-actions">
+          <button class="touch-btn touch-action-btn" type="button" id="pauseBtnBottom">暂停 / 继续</button>
+          <button class="touch-btn touch-action-btn" type="button" id="restartBtnBottom">重新开始</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel side-panel">
+      <h2>玩法说明</h2>
+      <ul>
+        <li>使用方向键或 `W A S D` 控制蛇的移动方向。</li>
+        <li>按 `P` 键可以暂停或继续游戏。</li>
+        <li>游戏结束后，可按空格键或点击按钮重新开始。</li>
+        <li>在手机上可使用底部的触控方向按钮操作。</li>
+      </ul>
+
+      <div class="action-row">
+        <button class="action-btn primary" type="button" id="restartBtnSide">重新开始</button>
+        <button class="action-btn" type="button" id="pauseBtnSide">暂停 / 继续</button>
+      </div>
+
+      <div class="mode-panel">
+        <h2>模式选择</h2>
+        <div class="mode-options">
+          <button class="action-btn mode-btn active" type="button" data-mode="wrap">穿墙模式</button>
+          <button class="action-btn mode-btn" type="button" data-mode="classic">经典模式</button>
+        </div>
+      </div>
+
+      <div class="notice">
+        <strong>规则说明</strong>
+        地图大小为 `1200 × 800`。每吃到一个食物增加 10 分，撞到自己会失败；切换到经典模式后，撞墙也会直接结束。
+      </div>
+
+      <div class="notice">
+        <strong>设备适配</strong>
+        电脑端采用宽屏画布和侧边说明区，移动端会自动切换为上下布局，并显示触控按钮。
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const WINDOW_WIDTH = 1200;
+    const WINDOW_HEIGHT = 800;
+    const CELL_SIZE = 20;
+    const GRID_WIDTH = WINDOW_WIDTH / CELL_SIZE;
+    const GRID_HEIGHT = WINDOW_HEIGHT / CELL_SIZE;
+    const TICK_INTERVAL = 1000 / 12;
+
+    const UP = { x: 0, y: -1 };
+    const DOWN = { x: 0, y: 1 };
+    const LEFT = { x: -1, y: 0 };
+    const RIGHT = { x: 1, y: 0 };
+
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const scoreValue = document.getElementById("scoreValue");
+    const lengthValue = document.getElementById("lengthValue");
+    const modeValue = document.getElementById("modeValue");
+    const stateValue = document.getElementById("stateValue");
+    const overlay = document.getElementById("overlay");
+    const overlayTitle = document.getElementById("overlayTitle");
+    const overlayText = document.getElementById("overlayText");
+    const directionButtons = document.querySelectorAll("[data-dir]");
+    const modeButtons = document.querySelectorAll("[data-mode]");
+    const restartButtons = [
+      document.getElementById("restartBtnBottom"),
+      document.getElementById("restartBtnSide")
+    ];
+    const pauseButtons = [
+      document.getElementById("pauseBtnBottom"),
+      document.getElementById("pauseBtnSide")
+    ];
+
+    const state = {
+      snake: [],
+      direction: { ...RIGHT },
+      grow: false,
+      food: { x: 0, y: 0 },
+      score: 0,
+      paused: false,
+      gameOver: false,
+      mode: "wrap",
+      lastTick: 0
+    };
+
+    function getModeLabel() {
+      return state.mode === "wrap" ? "穿墙" : "经典";
+    }
+
+    function resetGame() {
+      const startX = Math.floor(GRID_WIDTH / 2);
+      const startY = Math.floor(GRID_HEIGHT / 2);
+      state.snake = [
+        { x: startX, y: startY },
+        { x: startX - 1, y: startY },
+        { x: startX - 2, y: startY }
+      ];
+      state.direction = { ...RIGHT };
+      state.grow = false;
+      state.score = 0;
+      state.paused = false;
+      state.gameOver = false;
+      state.lastTick = 0;
+      respawnFood();
+      updateHud();
+      draw();
+    }
+
+    function respawnFood() {
+      while (true) {
+        const position = {
+          x: Math.floor(Math.random() * GRID_WIDTH),
+          y: Math.floor(Math.random() * GRID_HEIGHT)
+        };
+        const onSnake = state.snake.some((segment) => segment.x === position.x && segment.y === position.y);
+        if (!onSnake) {
+          state.food = position;
+          return;
+        }
+      }
+    }
+
+    function setDirection(nextDirection) {
+      if (state.gameOver) return;
+      const isReverse =
+        nextDirection.x === -state.direction.x &&
+        nextDirection.y === -state.direction.y;
+      if (!isReverse) {
+        state.direction = nextDirection;
+      }
+    }
+
+    function togglePause() {
+      if (state.gameOver) return;
+      state.paused = !state.paused;
+      updateHud();
+      draw();
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      for (const button of modeButtons) {
+        button.classList.toggle("active", button.dataset.mode === mode);
+      }
+      resetGame();
+    }
+
+    function moveSnake() {
+      const head = state.snake[0];
+      let nextHead = {
+        x: head.x + state.direction.x,
+        y: head.y + state.direction.y
+      };
+
+      if (state.mode === "wrap") {
+        nextHead = {
+          x: (nextHead.x + GRID_WIDTH) % GRID_WIDTH,
+          y: (nextHead.y + GRID_HEIGHT) % GRID_HEIGHT
+        };
+      } else {
+        const hitWall =
+          nextHead.x < 0 ||
+          nextHead.x >= GRID_WIDTH ||
+          nextHead.y < 0 ||
+          nextHead.y >= GRID_HEIGHT;
+        if (hitWall) {
+          state.gameOver = true;
+          updateHud();
+          return;
+        }
+      }
+
+      const hitSelf = state.snake.some((segment) => segment.x === nextHead.x && segment.y === nextHead.y);
+      if (hitSelf) {
+        state.gameOver = true;
+        updateHud();
+        return;
+      }
+
+      state.snake.unshift(nextHead);
+
+      if (!state.grow) {
+        state.snake.pop();
+      } else {
+        state.grow = false;
+      }
+
+      if (nextHead.x === state.food.x && nextHead.y === state.food.y) {
+        state.grow = true;
+        state.score += 10;
+        respawnFood();
+      }
+    }
+
+    function updateHud() {
+      scoreValue.textContent = String(state.score);
+      lengthValue.textContent = String(state.snake.length);
+      modeValue.textContent = getModeLabel();
+      stateValue.textContent = state.gameOver ? "已结束" : (state.paused ? "已暂停" : "进行中");
+
+      if (state.gameOver) {
+        overlay.classList.add("show");
+        overlayTitle.textContent = "游戏结束";
+        overlayText.textContent = `当前为${getModeLabel()}模式，最终分数为 ${state.score}，蛇身长度为 ${state.snake.length}。按空格键或点击按钮重新开始。`;
+      } else if (state.paused) {
+        overlay.classList.add("show");
+        overlayTitle.textContent = "游戏暂停";
+        overlayText.textContent = `当前为${getModeLabel()}模式，按 P 键或使用页面按钮继续游戏。`;
+      } else {
+        overlay.classList.remove("show");
+      }
+    }
+
+    function drawRect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+      drawRect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, "#000");
+
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= WINDOW_WIDTH; x += CELL_SIZE) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, WINDOW_HEIGHT);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= WINDOW_HEIGHT; y += CELL_SIZE) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(WINDOW_WIDTH, y);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = "rgba(180,180,180,0.9)";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(1.5, 1.5, WINDOW_WIDTH - 3, WINDOW_HEIGHT - 3);
+
+      state.snake.forEach((segment, index) => {
+        const px = segment.x * CELL_SIZE;
+        const py = segment.y * CELL_SIZE;
+        if (index === 0) {
+          drawRect(px + 2, py + 2, CELL_SIZE - 4, CELL_SIZE - 4, "#00ff00");
+          drawRect(px + 4, py + 4, CELL_SIZE - 8, CELL_SIZE - 8, "#64ff64");
+        } else {
+          const greenValue = Math.max(150, 255 - index * 5);
+          drawRect(px + 2, py + 2, CELL_SIZE - 4, CELL_SIZE - 4, `rgb(0, ${greenValue}, 0)`);
+        }
+      });
+
+      const foodX = state.food.x * CELL_SIZE;
+      const foodY = state.food.y * CELL_SIZE;
+      drawRect(foodX + 2, foodY + 2, CELL_SIZE - 4, CELL_SIZE - 4, "#ff0000");
+      drawRect(foodX + 4, foodY + 4, CELL_SIZE - 8, CELL_SIZE - 8, "#ff6464");
+
+      ctx.font = "32px Trebuchet MS";
+      ctx.fillStyle = state.mode === "wrap" ? "#00ff00" : "#ffd166";
+      ctx.fillText(
+        state.mode === "wrap" ? "当前模式：穿墙" : "当前模式：经典（撞墙结束）",
+        20,
+        WINDOW_HEIGHT - 22
+      );
+      ctx.fillStyle = "#fff";
+      ctx.fillText("方向键/WASD 控制 | P 暂停 | 空格重开", WINDOW_WIDTH - 470, WINDOW_HEIGHT - 18);
+    }
+
+    function loop(timestamp) {
+      if (!state.lastTick) state.lastTick = timestamp;
+      if (!state.paused && !state.gameOver && timestamp - state.lastTick >= TICK_INTERVAL) {
+        moveSnake();
+        updateHud();
+        draw();
+        state.lastTick = timestamp;
+      } else if (!state.paused && !state.gameOver) {
+        draw();
+      }
+      requestAnimationFrame(loop);
+    }
+
+    document.addEventListener("keydown", (event) => {
+      const key = event.key.toLowerCase();
+      if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) {
+        event.preventDefault();
+      }
+
+      if (key === "arrowup" || key === "w") setDirection(UP);
+      else if (key === "arrowdown" || key === "s") setDirection(DOWN);
+      else if (key === "arrowleft" || key === "a") setDirection(LEFT);
+      else if (key === "arrowright" || key === "d") setDirection(RIGHT);
+      else if (key === "p" && !state.gameOver) togglePause();
+      else if (key === " " && state.gameOver) resetGame();
+    });
+
+    for (const button of directionButtons) {
+      const dir = button.dataset.dir;
+      const handle = () => {
+        if (dir === "up") setDirection(UP);
+        else if (dir === "down") setDirection(DOWN);
+        else if (dir === "left") setDirection(LEFT);
+        else if (dir === "right") setDirection(RIGHT);
+      };
+      button.addEventListener("click", handle);
+      button.addEventListener("touchstart", (event) => {
+        event.preventDefault();
+        handle();
+      }, { passive: false });
+    }
+
+    for (const button of restartButtons) {
+      button.addEventListener("click", resetGame);
+    }
+
+    for (const button of pauseButtons) {
+      button.addEventListener("click", togglePause);
+    }
+
+    for (const button of modeButtons) {
+      button.addEventListener("click", () => setMode(button.dataset.mode));
+    }
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    canvas.addEventListener("touchstart", (event) => {
+      if (!event.touches.length) return;
+      touchStartX = event.touches[0].clientX;
+      touchStartY = event.touches[0].clientY;
+    }, { passive: true });
+
+    canvas.addEventListener("touchend", (event) => {
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      if (Math.abs(deltaX) < 18 && Math.abs(deltaY) < 18) return;
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        setDirection(deltaX > 0 ? RIGHT : LEFT);
+      } else {
+        setDirection(deltaY > 0 ? DOWN : UP);
+      }
+    }, { passive: true });
+
+    setMode("wrap");
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
