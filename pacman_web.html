@@ -265,104 +265,6 @@
       line-height: 1.6;
     }
 
-    .touch-panel {
-      position: fixed;
-      left: max(12px, env(safe-area-inset-left));
-      right: max(12px, env(safe-area-inset-right));
-      bottom: max(12px, env(safe-area-inset-bottom));
-      z-index: 3;
-      display: none;
-      padding: 14px;
-      border-radius: 22px;
-      background: linear-gradient(180deg, rgba(9, 15, 35, 0.96), rgba(4, 8, 22, 0.96));
-      border: 1px solid rgba(100, 197, 255, 0.22);
-      box-shadow: 0 16px 28px rgba(0, 0, 0, 0.28);
-      touch-action: manipulation;
-    }
-
-    .touch-title {
-      margin: 0 0 12px;
-      font-size: 13px;
-      color: #9db2d8;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      text-align: center;
-    }
-
-    .touch-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(56px, 72px));
-      grid-template-areas:
-        ". up ."
-        "left center right"
-        ". down .";
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .touch-actions {
-      margin-top: 12px;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .touch-btn {
-      border: 1px solid rgba(120, 205, 255, 0.3);
-      background: radial-gradient(circle at 30% 30%, rgba(55, 90, 192, 0.96), rgba(15, 26, 63, 0.98));
-      color: var(--text);
-      border-radius: 18px;
-      min-height: 58px;
-      padding: 0;
-      font-size: 22px;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 10px 20px rgba(0, 0, 0, 0.26);
-      touch-action: manipulation;
-      pointer-events: auto;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-
-    .touch-btn:active {
-      transform: scale(0.98);
-      filter: brightness(1.08);
-    }
-
-    .touch-up {
-      grid-area: up;
-    }
-
-    .touch-left {
-      grid-area: left;
-    }
-
-    .touch-center {
-      grid-area: center;
-      background: rgba(10, 16, 38, 0.92);
-      border-style: dashed;
-      font-size: 11px;
-      color: #8fa6d0;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
-    .touch-right {
-      grid-area: right;
-    }
-
-    .touch-down {
-      grid-area: down;
-    }
-
-    .touch-action-btn {
-      border-radius: 16px;
-      font-size: 15px;
-      letter-spacing: 0.04em;
-    }
-
     @media (max-width: 1120px) {
       .sidebar {
         width: min(280px, calc(100vw - 28px));
@@ -404,17 +306,8 @@
         gap: 6px;
       }
 
-      .touch-panel {
-        display: block;
-        left: max(6px, env(safe-area-inset-left));
-        right: max(6px, env(safe-area-inset-right));
-        bottom: max(6px, env(safe-area-inset-bottom));
-        padding: 8px 10px;
-        border-radius: 16px;
-      }
-
       canvas {
-        height: min(calc(100dvh - 86px), 100%);
+        height: min(calc(100dvh - 12px), 100%);
         border-radius: 16px;
       }
 
@@ -430,26 +323,11 @@
       .quick-actions {
         gap: 6px;
       }
-
-      .touch-title {
-        display: none;
-      }
     }
 
     @media (max-width: 520px) {
-      .touch-grid {
-        grid-template-columns: repeat(3, minmax(48px, 1fr));
-        gap: 8px;
-      }
-
-      .touch-btn {
-        min-height: 46px;
-        font-size: 18px;
-        border-radius: 14px;
-      }
-
       canvas {
-        height: min(calc(100dvh - 74px), 100%);
+        height: min(calc(100dvh - 8px), 100%);
         border-radius: 14px;
       }
 
@@ -457,19 +335,6 @@
         min-height: 30px;
         padding: 0 9px;
         font-size: 12px;
-      }
-
-      .touch-panel {
-        padding: 6px 8px;
-      }
-
-      .touch-actions {
-        margin-top: 6px;
-        gap: 8px;
-      }
-
-      .touch-action-btn {
-        font-size: 13px;
       }
     }
   </style>
@@ -479,20 +344,6 @@
     <div class="board-wrap">
       <div class="game-stage">
         <canvas id="game" width="960" height="1000"></canvas>
-        <div class="touch-panel">
-          <div class="touch-title">移动端控制</div>
-          <div class="touch-grid">
-            <button class="touch-btn touch-up" type="button" data-action="move-up" aria-label="向上移动">▲</button>
-            <button class="touch-btn touch-left" type="button" data-action="move-left" aria-label="向左移动">◀</button>
-            <div class="touch-btn touch-center" aria-hidden="true">MOVE</div>
-            <button class="touch-btn touch-right" type="button" data-action="move-right" aria-label="向右移动">▶</button>
-            <button class="touch-btn touch-down" type="button" data-action="move-down" aria-label="向下移动">▼</button>
-          </div>
-          <div class="touch-actions">
-            <button class="touch-btn touch-action-btn" type="button" data-action="toggle-pause">暂停 / 继续</button>
-            <button class="touch-btn touch-action-btn" type="button" data-action="confirm">开始 / 重开</button>
-          </div>
-        </div>
       </div>
     </div>
     <aside class="sidebar">
@@ -502,7 +353,7 @@
           <a class="back-link" href="index.html">返回主页</a>
         </div>
       </div>
-      <p class="sidebar-copy">现在从主页进入后会直接进入全屏游戏视图。桌面端可用键盘，手机端可用底部触控按钮或滑动操作。</p>
+      <p class="sidebar-copy">现在从主页进入后会直接进入全屏游戏视图。桌面端可用键盘，触屏设备可通过滑动和轻触完成操作。</p>
       <div class="audio-panel">
         <div class="audio-title">背景音乐</div>
         <div class="audio-controls">
@@ -517,7 +368,7 @@
           </div>
         </div>
       </div>
-      <div class="compact-hint">方向键 / WASD 移动，`P` 暂停，`Enter` 或空格开始或重开。</div>
+      <div class="compact-hint">方向键 / WASD 移动，触屏设备滑动移动，轻触可开始或重开。</div>
     </aside>
   </div>
 
@@ -1392,7 +1243,6 @@
     const audioUpButton = document.getElementById("audio-up");
     const audioVolumeLabel = document.getElementById("audio-volume");
     const restartGameButton = document.getElementById("restartGameBtn");
-    const touchButtons = document.querySelectorAll("[data-action]");
     const game = new Game(canvas);
 
     function refreshAudioControls() {
@@ -1448,18 +1298,24 @@
       }
     }
 
-    for (const button of touchButtons) {
-      const action = button.dataset.action;
-      if (!action) continue;
-      button.addEventListener("click", () => triggerGameAction(action));
-      button.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        triggerGameAction(action);
-      });
-      button.addEventListener("touchstart", (event) => {
-        event.preventDefault();
-        triggerGameAction(action);
-      }, {passive: false});
+    function handleCanvasPress(x, y) {
+      if (game.startScreen) {
+        for (const card of game.getStartCardRects()) {
+          if (pointInRect(x, y, card)) {
+            game.selectedStartLevel = card.level;
+            return;
+          }
+        }
+        if (pointInRect(x, y, game.getStartButtonRect())) game.startRun(game.selectedStartLevel);
+        return;
+      }
+
+      if (game.gameOver || game.gameCleared) {
+        game.startRun(game.selectedStartLevel);
+        return;
+      }
+
+      if (game.paused) game.paused = false;
     }
 
     refreshAudioControls();
@@ -1490,15 +1346,7 @@
       const scaleY = canvas.height / rect.height;
       const x = (event.clientX - rect.left) * scaleX;
       const y = (event.clientY - rect.top) * scaleY;
-      if (game.startScreen) {
-        for (const card of game.getStartCardRects()) {
-          if (pointInRect(x, y, card)) {
-            game.selectedStartLevel = card.level;
-            return;
-          }
-        }
-        if (pointInRect(x, y, game.getStartButtonRect())) game.startRun(game.selectedStartLevel);
-      }
+      handleCanvasPress(x, y);
     });
 
     canvas.addEventListener("touchstart", () => {
@@ -1520,7 +1368,17 @@
       if (!touch) return;
       const deltaX = touch.clientX - touchStartX;
       const deltaY = touch.clientY - touchStartY;
-      if (Math.abs(deltaX) < 20 && Math.abs(deltaY) < 20) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (touch.clientX - rect.left) * scaleX;
+      const y = (touch.clientY - rect.top) * scaleY;
+
+      if (Math.abs(deltaX) < 20 && Math.abs(deltaY) < 20) {
+        handleCanvasPress(x, y);
+        return;
+      }
+
       if (Math.abs(deltaX) > Math.abs(deltaY)) triggerGameAction(deltaX > 0 ? "move-right" : "move-left");
       else triggerGameAction(deltaY > 0 ? "move-down" : "move-up");
     }, {passive: true});
