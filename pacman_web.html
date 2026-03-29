@@ -369,7 +369,7 @@
       }
     }
 
-    @media (max-width: 780px) {
+    @media (max-width: 1024px), (hover: none) and (pointer: coarse) {
       .board-wrap {
         padding:
           max(6px, env(safe-area-inset-top))
@@ -430,6 +430,10 @@
       .quick-actions {
         gap: 6px;
       }
+
+      .touch-title {
+        display: none;
+      }
     }
 
     @media (max-width: 520px) {
@@ -453,10 +457,6 @@
         min-height: 30px;
         padding: 0 9px;
         font-size: 12px;
-      }
-
-      .touch-title {
-        display: none;
       }
 
       .touch-panel {
