@@ -137,41 +137,33 @@
 
     .audio-controls {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
-      gap: 14px;
-    }
-
-    .audio-volume-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      align-items: center;
+      gap: 8px;
     }
 
     .audio-btn {
-      border: 1px solid rgba(123, 205, 255, 0.34);
-      background: radial-gradient(circle at 30% 30%, rgba(66, 104, 215, 0.95), rgba(18, 31, 73, 0.98));
-      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08);
+      color: #e9f4ff;
       border-radius: 50%;
-      width: 44px;
-      height: 44px;
+      width: 34px;
+      height: 34px;
       padding: 0;
-      font-size: 18px;
+      font-size: 15px;
       line-height: 1;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 8px 16px rgba(0, 0, 0, 0.28);
+      box-shadow: none;
       transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
     }
 
     .audio-btn:hover {
       transform: translateY(-1px);
-      border-color: rgba(140, 214, 255, 0.5);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 18px rgba(0, 0, 0, 0.32);
-      filter: brightness(1.06);
+      border-color: rgba(255, 255, 255, 0.28);
+      filter: brightness(1.08);
     }
 
     .audio-btn:active {
@@ -179,44 +171,28 @@
     }
 
     .audio-toggle-btn {
-      width: 64px;
-      height: 64px;
-      font-size: 24px;
+      width: 34px;
+      height: 34px;
+      font-size: 15px;
       flex: 0 0 auto;
     }
 
     .audio-btn-muted {
-      background: radial-gradient(circle at 30% 30%, rgba(88, 96, 122, 0.92), rgba(30, 38, 57, 0.98));
-      border-color: rgba(173, 183, 208, 0.24);
-      color: #d8e0f2;
+      background: rgba(109, 121, 154, 0.2);
+      border-color: rgba(173, 183, 208, 0.3);
+      color: #d5ddef;
     }
 
     .audio-volume {
-      min-width: 64px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(102, 190, 255, 0.18);
-      background: rgba(3, 8, 22, 0.9);
+      min-width: 46px;
+      padding: 0;
+      border: none;
+      background: transparent;
       text-align: center;
-      color: var(--accent);
+      color: #80dcff;
       font-size: 12px;
       font-weight: 700;
-      letter-spacing: 0.08em;
-      box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.45);
-    }
-
-    .audio-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      min-width: 0;
-    }
-
-    .audio-label {
-      font-size: 12px;
-      color: #97abd0;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
     .dot {
@@ -372,14 +348,9 @@
         <div class="audio-title">背景音乐</div>
         <div class="audio-controls">
           <button id="audio-toggle" class="audio-btn audio-toggle-btn" type="button" aria-label="切换背景音乐">🔊</button>
-          <div class="audio-meta">
-            <div class="audio-label">Volume</div>
-            <div id="audio-volume" class="audio-volume">60%</div>
-          </div>
-          <div class="audio-volume-stack">
-            <button id="audio-up" class="audio-btn" type="button" aria-label="增大音量">▲</button>
-            <button id="audio-down" class="audio-btn" type="button" aria-label="减小音量">▼</button>
-          </div>
+          <button id="audio-down" class="audio-btn" type="button" aria-label="降低音量">−</button>
+          <div id="audio-volume" class="audio-volume">60%</div>
+          <button id="audio-up" class="audio-btn" type="button" aria-label="提高音量">+</button>
         </div>
       </div>
       <div class="compact-hint">方向键 / WASD 移动，触屏设备滑动移动，轻触可开始或重开。</div>
@@ -471,16 +442,37 @@
 
     class AudioManager {
       constructor() {
+        this.storageKey = "pacman-web-audio-settings";
         this.ctx = null;
         this.started = false;
         this.isMuted = false;
         this.volume = 0.6;
         this.masterGain = null;
         this.loopTimer = null;
+        this.restore();
+      }
+
+      restore() {
+        try {
+          const raw = localStorage.getItem(this.storageKey);
+          if (!raw) return;
+          const saved = JSON.parse(raw);
+          if (typeof saved.isMuted === "boolean") this.isMuted = saved.isMuted;
+          if (typeof saved.volume === "number") this.volume = Math.max(0, Math.min(1, saved.volume));
+        } catch (_) {}
+      }
+
+      persist() {
+        try {
+          localStorage.setItem(this.storageKey, JSON.stringify({ isMuted: this.isMuted, volume: this.volume }));
+        } catch (_) {}
       }
 
       ensureStarted() {
-        if (this.started) return;
+        if (this.started) {
+          if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+          return;
+        }
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return;
         this.ctx = new AudioCtx();
@@ -501,13 +493,15 @@
       toggleMute() {
         this.isMuted = !this.isMuted;
         this.updateMasterGain();
+        this.persist();
       }
 
       adjustVolume(delta) {
-        this.volume = Math.max(0, Math.min(1, Math.round((this.volume + delta) * 10) / 10));
+        this.volume = Math.max(0, Math.min(1, Math.round((this.volume + delta) * 20) / 20));
         if (this.volume === 0) this.isMuted = true;
         else if (this.isMuted) this.isMuted = false;
         this.updateMasterGain();
+        this.persist();
       }
 
       playLoop() {
@@ -1276,13 +1270,13 @@
 
     audioDownButton.addEventListener("click", () => {
       game.audio.ensureStarted();
-      game.audio.adjustVolume(-0.1);
+      game.audio.adjustVolume(-0.05);
       refreshAudioControls();
     });
 
     audioUpButton.addEventListener("click", () => {
       game.audio.ensureStarted();
-      game.audio.adjustVolume(0.1);
+      game.audio.adjustVolume(0.05);
       refreshAudioControls();
     });
 
@@ -1396,6 +1390,19 @@
       if (Math.abs(deltaX) > Math.abs(deltaY)) triggerGameAction(deltaX > 0 ? "move-right" : "move-left");
       else triggerGameAction(deltaY > 0 ? "move-down" : "move-up");
     }, {passive: true});
+
+    document.addEventListener("pointerdown", () => {
+      if (!game.audio.isMuted) game.audio.ensureStarted();
+    }, {once: true, passive: true});
+
+    document.addEventListener("visibilitychange", () => {
+      if (!game.audio.ctx) return;
+      if (document.hidden) {
+        if (game.audio.ctx.state === "running") game.audio.ctx.suspend();
+      } else if (!game.audio.isMuted) {
+        game.audio.ensureStarted();
+      }
+    });
 
     let last = 0;
     function frame(ts) {

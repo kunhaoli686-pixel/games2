@@ -354,6 +354,44 @@
             transition: opacity 0.8s ease, transform 0.8s ease;
         }
 
+        .audio-dock {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            color: #dce8ff;
+            background: linear-gradient(180deg, rgba(11, 18, 40, 0.95), rgba(5, 10, 25, 0.96));
+            border: 1px solid rgba(100, 197, 255, 0.18);
+            border-radius: 999px;
+            backdrop-filter: blur(8px);
+            z-index: 5;
+        }
+
+        .audio-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.08);
+            color: #e9f4ff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .audio-volume {
+            min-width: 46px;
+            text-align: center;
+            color: #80dcff;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
         .hint.fade-out {
             opacity: 0;
             transform: translateY(-8px);
@@ -385,6 +423,13 @@
                 text-align: center;
                 border-radius: 16px;
             }
+
+            .audio-dock {
+                left: 16px;
+                right: 16px;
+                justify-content: center;
+                border-radius: 16px;
+            }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -398,6 +443,12 @@
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
+    <div class="audio-dock" aria-label="背景音乐控制">
+        <button class="audio-btn" id="audioToggleBtn" type="button" aria-label="切换背景音乐">🔊</button>
+        <button class="audio-btn" id="audioDownBtn" type="button" aria-label="降低音量">−</button>
+        <div class="audio-volume" id="audioVolumeText">60%</div>
+        <button class="audio-btn" id="audioUpBtn" type="button" aria-label="提高音量">+</button>
+    </div>
 
         <div id="uiOverlay">
         <div id="startScreen" class="screen active">
@@ -487,6 +538,10 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const hintEl = document.querySelector('.hint');
+        const audioToggleBtn = document.getElementById('audioToggleBtn');
+        const audioDownBtn = document.getElementById('audioDownBtn');
+        const audioUpBtn = document.getElementById('audioUpBtn');
+        const audioVolumeText = document.getElementById('audioVolumeText');
         canvas.width = SCREEN_WIDTH;
         canvas.height = SCREEN_HEIGHT;
 
@@ -563,17 +618,71 @@
         class SoundManager {
             constructor() {
                 this.enabled = true;
+                this.storageKey = 'breakout-web-audio-settings';
                 this.audioCtx = null;
+                this.sfxGain = null;
+                this.bgmGain = null;
+                this.bgmTimer = null;
+                this.isMuted = false;
+                this.volume = 0.6;
                 try {
                     this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    this.sfxGain = this.audioCtx.createGain();
+                    this.bgmGain = this.audioCtx.createGain();
+                    this.sfxGain.connect(this.audioCtx.destination);
+                    this.bgmGain.connect(this.audioCtx.destination);
+                    this.restore();
+                    this.updateMasterGain();
                 } catch (e) {
                     this.enabled = false;
                 }
             }
 
+            restore() {
+                try {
+                    const raw = localStorage.getItem(this.storageKey);
+                    if (!raw) return;
+                    const saved = JSON.parse(raw);
+                    if (typeof saved.isMuted === 'boolean') this.isMuted = saved.isMuted;
+                    if (typeof saved.volume === 'number') this.volume = Math.max(0, Math.min(1, saved.volume));
+                } catch (_) {}
+            }
+
+            persist() {
+                try {
+                    localStorage.setItem(this.storageKey, JSON.stringify({ isMuted: this.isMuted, volume: this.volume }));
+                } catch (_) {}
+            }
+
+            updateMasterGain() {
+                if (!this.audioCtx || !this.sfxGain || !this.bgmGain) return;
+                const target = this.isMuted ? 0 : this.volume;
+                this.sfxGain.gain.cancelScheduledValues(this.audioCtx.currentTime);
+                this.bgmGain.gain.cancelScheduledValues(this.audioCtx.currentTime);
+                this.sfxGain.gain.setTargetAtTime(target, this.audioCtx.currentTime, 0.02);
+                this.bgmGain.gain.setTargetAtTime(target * 0.65, this.audioCtx.currentTime, 0.02);
+            }
+
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                this.updateMasterGain();
+                this.persist();
+            }
+
+            adjustVolume(delta) {
+                this.volume = Math.max(0, Math.min(1, Math.round((this.volume + delta) * 20) / 20));
+                if (this.volume === 0) this.isMuted = true;
+                else if (this.isMuted) this.isMuted = false;
+                this.updateMasterGain();
+                this.persist();
+            }
+
             resume() {
                 if (this.audioCtx && this.audioCtx.state === 'suspended') {
                     this.audioCtx.resume();
+                }
+                if (this.enabled && this.audioCtx && !this.bgmTimer) {
+                    this.playBgmLoop();
                 }
             }
 
@@ -584,7 +693,7 @@
                 const gainNode = this.audioCtx.createGain();
 
                 oscillator.connect(gainNode);
-                gainNode.connect(this.audioCtx.destination);
+                gainNode.connect(this.sfxGain || this.audioCtx.destination);
 
                 oscillator.type = type;
                 oscillator.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
@@ -594,6 +703,34 @@
 
                 oscillator.start(this.audioCtx.currentTime);
                 oscillator.stop(this.audioCtx.currentTime + duration);
+            }
+
+            playBgmLoop() {
+                if (!this.enabled || !this.audioCtx || !this.bgmGain) return;
+                const notes = [
+                    ['C4', 0.18], ['E4', 0.18], ['G4', 0.2], ['REST', 0.1],
+                    ['D4', 0.18], ['F4', 0.18], ['A4', 0.2], ['REST', 0.1],
+                    ['E4', 0.18], ['G4', 0.18], ['B4', 0.2], ['REST', 0.1]
+                ];
+                const freq = { C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392, A4: 440, B4: 493.88, REST: 0 };
+                let when = this.audioCtx.currentTime + 0.04;
+                for (const [name, dur] of notes) {
+                    if (freq[name] > 0) {
+                        const osc = this.audioCtx.createOscillator();
+                        const gain = this.audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.value = freq[name];
+                        gain.gain.setValueAtTime(0.0001, when);
+                        gain.gain.linearRampToValueAtTime(0.035, when + 0.03);
+                        gain.gain.linearRampToValueAtTime(0.0001, when + dur);
+                        osc.connect(gain).connect(this.bgmGain);
+                        osc.start(when);
+                        osc.stop(when + dur);
+                    }
+                    when += dur;
+                }
+                const delay = Math.max(140, (when - this.audioCtx.currentTime - 0.1) * 1000);
+                this.bgmTimer = setTimeout(() => this.playBgmLoop(), delay);
             }
 
             playPaddle() { this.playTone(400, 0.1, 'square', 0.2); }
@@ -621,6 +758,13 @@
         }
 
         const soundManager = new SoundManager();
+
+        function refreshAudioUI() {
+            audioToggleBtn.textContent = soundManager.isMuted ? '🔇' : '🔊';
+            audioToggleBtn.title = soundManager.isMuted ? '开启背景音乐' : '关闭背景音乐';
+            audioVolumeText.textContent = `${Math.round(soundManager.volume * 100)}%`;
+        }
+        refreshAudioUI();
 
         // 粒子类
         class Particle {
@@ -1314,6 +1458,22 @@
             game.start();
         });
 
+        audioToggleBtn.addEventListener('click', () => {
+            soundManager.resume();
+            soundManager.toggleMute();
+            refreshAudioUI();
+        });
+        audioDownBtn.addEventListener('click', () => {
+            soundManager.resume();
+            soundManager.adjustVolume(-0.05);
+            refreshAudioUI();
+        });
+        audioUpBtn.addEventListener('click', () => {
+            soundManager.resume();
+            soundManager.adjustVolume(0.05);
+            refreshAudioUI();
+        });
+
         document.getElementById('winRestartBtn').addEventListener('click', () => {
             soundManager.playClick();
             game.reset();
@@ -1454,6 +1614,19 @@
             keys['ArrowRight'] = false;
             keys['KeyA'] = false;
             keys['KeyD'] = false;
+        });
+
+        document.addEventListener('pointerdown', () => {
+            if (!soundManager.isMuted) soundManager.resume();
+        }, { once: true, passive: true });
+
+        document.addEventListener('visibilitychange', () => {
+            if (!soundManager.audioCtx) return;
+            if (document.hidden) {
+                if (soundManager.audioCtx.state === 'running') soundManager.audioCtx.suspend();
+            } else if (!soundManager.isMuted) {
+                soundManager.resume();
+            }
         });
 
         // 启动游戏

@@ -183,6 +183,53 @@
       transform: translateY(-2px);
     }
 
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .music-panel {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border-light);
+      background: var(--bg-surface);
+      backdrop-filter: blur(10px);
+    }
+
+    .music-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--border-light);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      padding: 0;
+      font-weight: 700;
+    }
+
+    .music-btn:hover {
+      border-color: var(--border-highlight);
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .music-volume {
+      min-width: 46px;
+      text-align: center;
+      color: #80dcff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
     /* Hero 区域 */
     .hero {
       display: grid;
@@ -255,6 +302,7 @@
       line-height: 1.1;
       letter-spacing: -0.03em;
       background: linear-gradient(180deg, #fff 0%, #a5a5a5 100%);
+      background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -544,6 +592,7 @@
       .hero { grid-template-columns: 1fr; gap: 24px; }
       .shell { width: 100%; padding: 24px; }
       .hero-card { padding: 32px 24px; }
+      .top-actions { width: 100%; }
     }
 
     @media (max-width: 600px) {
@@ -551,6 +600,9 @@
       .hero-actions { flex-direction: column; }
       .btn { width: 100%; }
       .footer-card { flex-direction: column; gap: 16px; text-align: center; }
+      .top-actions { justify-content: stretch; }
+      .top-link { width: 100%; text-align: center; }
+      .music-panel { width: 100%; justify-content: center; }
     }
 
     /* 减少动态效果（无障碍/性能友好） */
@@ -575,7 +627,15 @@
           <p>HTML5 网页版经典街机合集</p>
         </div>
       </div>
-      <a class="top-link" href="#games">浏览游戏</a>
+      <div class="top-actions">
+        <a class="top-link" href="#games">浏览游戏</a>
+        <div class="music-panel" aria-label="主页背景音乐控制">
+          <button class="music-btn" id="musicToggle" type="button" aria-label="切换背景音乐">🔊</button>
+          <button class="music-btn" id="musicDown" type="button" aria-label="降低音量">−</button>
+          <div class="music-volume" id="musicVolume">55%</div>
+          <button class="music-btn" id="musicUp" type="button" aria-label="提高音量">+</button>
+        </div>
+      </div>
     </header>
 
     <section class="hero">
@@ -685,5 +745,137 @@
       <a class="top-link" href="#top" onclick="window.scrollTo({ top: 0, behavior: 'smooth' }); return false;">回到顶部 ↑</a>
     </footer>
   </div>
+  <script>
+    (function () {
+      const STORAGE_KEY = "arcade-home-music-settings";
+      const toggleBtn = document.getElementById("musicToggle");
+      const upBtn = document.getElementById("musicUp");
+      const downBtn = document.getElementById("musicDown");
+      const volumeEl = document.getElementById("musicVolume");
+
+      class AmbientMusic {
+        constructor() {
+          this.ctx = null;
+          this.master = null;
+          this.started = false;
+          this.timer = null;
+          this.isMuted = false;
+          this.volume = 0.55;
+        }
+
+        restore() {
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+            if (typeof saved.volume === "number") this.volume = Math.max(0, Math.min(1, saved.volume));
+            if (typeof saved.isMuted === "boolean") this.isMuted = saved.isMuted;
+          } catch (_) {}
+        }
+
+        persist() {
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ volume: this.volume, isMuted: this.isMuted }));
+          } catch (_) {}
+        }
+
+        ensureStarted() {
+          if (this.started) {
+            if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+            return;
+          }
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+          this.ctx = new AudioCtx();
+          this.master = this.ctx.createGain();
+          this.master.connect(this.ctx.destination);
+          this.started = true;
+          this.updateGain();
+          this.playLoop();
+        }
+
+        updateGain() {
+          if (!this.ctx || !this.master) return;
+          const target = this.isMuted ? 0 : this.volume;
+          this.master.gain.cancelScheduledValues(this.ctx.currentTime);
+          this.master.gain.setTargetAtTime(target, this.ctx.currentTime, 0.02);
+        }
+
+        toggleMute() {
+          this.isMuted = !this.isMuted;
+          this.updateGain();
+          this.persist();
+        }
+
+        adjustVolume(delta) {
+          this.volume = Math.max(0, Math.min(1, Math.round((this.volume + delta) * 20) / 20));
+          if (this.volume === 0) this.isMuted = true;
+          else if (this.isMuted) this.isMuted = false;
+          this.updateGain();
+          this.persist();
+        }
+
+        playLoop() {
+          if (!this.ctx || !this.master) return;
+          const notes = [
+            ["C4", 0.28], ["E4", 0.28], ["G4", 0.34], ["REST", 0.2],
+            ["D4", 0.28], ["F4", 0.28], ["A4", 0.34], ["REST", 0.2],
+            ["E4", 0.28], ["G4", 0.28], ["B4", 0.34], ["REST", 0.2]
+          ];
+          const freq = { C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392, A4: 440, B4: 493.88, REST: 0 };
+          let when = this.ctx.currentTime + 0.04;
+          for (const [name, dur] of notes) {
+            if (freq[name] > 0) {
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              osc.type = "triangle";
+              osc.frequency.value = freq[name];
+              gain.gain.setValueAtTime(0.0001, when);
+              gain.gain.linearRampToValueAtTime(0.035, when + 0.03);
+              gain.gain.linearRampToValueAtTime(0.0001, when + dur);
+              osc.connect(gain).connect(this.master);
+              osc.start(when);
+              osc.stop(when + dur);
+            }
+            when += dur;
+          }
+          const delay = Math.max(140, (when - this.ctx.currentTime - 0.1) * 1000);
+          this.timer = window.setTimeout(() => this.playLoop(), delay);
+        }
+      }
+
+      const music = new AmbientMusic();
+      music.restore();
+
+      function refreshMusicUI() {
+        toggleBtn.textContent = music.isMuted ? "🔇" : "🔊";
+        toggleBtn.title = music.isMuted ? "开启背景音乐" : "关闭背景音乐";
+        volumeEl.textContent = `${Math.round(music.volume * 100)}%`;
+      }
+
+      toggleBtn.addEventListener("click", () => {
+        music.ensureStarted();
+        music.toggleMute();
+        refreshMusicUI();
+      });
+      downBtn.addEventListener("click", () => {
+        music.ensureStarted();
+        music.adjustVolume(-0.05);
+        refreshMusicUI();
+      });
+      upBtn.addEventListener("click", () => {
+        music.ensureStarted();
+        music.adjustVolume(0.05);
+        refreshMusicUI();
+      });
+
+      const autoResume = () => {
+        if (!music.isMuted) music.ensureStarted();
+      };
+      document.addEventListener("pointerdown", autoResume, { once: true, passive: true });
+
+      refreshMusicUI();
+    })();
+  </script>
 </body>
 </html>

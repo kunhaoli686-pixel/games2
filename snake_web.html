@@ -271,6 +271,51 @@
       gap: 10px;
     }
 
+    .music-panel {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(11, 18, 40, 0.95), rgba(5, 10, 25, 0.96));
+      border: 1px solid rgba(100, 197, 255, 0.18);
+    }
+
+    .music-panel h3 {
+      margin: 0;
+      font-size: 15px;
+      color: var(--text);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .music-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .music-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08);
+      color: #e9f4ff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .music-volume {
+      min-width: 46px;
+      text-align: center;
+      color: #80dcff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
     .mode-panel {
       display: grid;
       gap: 10px;
@@ -455,6 +500,16 @@
         <button class="action-btn" type="button" id="pauseBtnSide">暂停 / 继续</button>
       </div>
 
+      <div class="music-panel">
+        <h3>背景音乐</h3>
+        <div class="music-controls">
+          <button class="music-btn" type="button" id="musicToggleBtn" aria-label="切换背景音乐">🔊</button>
+          <button class="music-btn" type="button" id="musicDownBtn" aria-label="降低音量">−</button>
+          <div class="music-volume" id="musicVolumeText">60%</div>
+          <button class="music-btn" type="button" id="musicUpBtn" aria-label="提高音量">+</button>
+        </div>
+      </div>
+
       <div class="mode-panel">
         <h2>模式选择</h2>
         <div class="mode-options">
@@ -497,6 +552,10 @@
     const overlay = document.getElementById("overlay");
     const overlayTitle = document.getElementById("overlayTitle");
     const overlayText = document.getElementById("overlayText");
+    const musicToggleBtn = document.getElementById("musicToggleBtn");
+    const musicDownBtn = document.getElementById("musicDownBtn");
+    const musicUpBtn = document.getElementById("musicUpBtn");
+    const musicVolumeText = document.getElementById("musicVolumeText");
     const directionButtons = document.querySelectorAll("[data-dir]");
     const modeButtons = document.querySelectorAll("[data-mode]");
     const restartButtons = [
@@ -519,6 +578,107 @@
       mode: "wrap",
       lastTick: 0
     };
+
+    class SnakeAudioManager {
+      constructor() {
+        this.storageKey = "snake-web-audio-settings";
+        this.ctx = null;
+        this.masterGain = null;
+        this.started = false;
+        this.loopTimer = null;
+        this.isMuted = false;
+        this.volume = 0.6;
+      }
+
+      restore() {
+        try {
+          const raw = localStorage.getItem(this.storageKey);
+          if (!raw) return;
+          const saved = JSON.parse(raw);
+          if (typeof saved.isMuted === "boolean") this.isMuted = saved.isMuted;
+          if (typeof saved.volume === "number") this.volume = Math.max(0, Math.min(1, saved.volume));
+        } catch (_) {}
+      }
+
+      persist() {
+        try {
+          localStorage.setItem(this.storageKey, JSON.stringify({ isMuted: this.isMuted, volume: this.volume }));
+        } catch (_) {}
+      }
+
+      ensureStarted() {
+        if (this.started) {
+          if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+          return;
+        }
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        this.ctx = new AudioCtx();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.connect(this.ctx.destination);
+        this.started = true;
+        this.updateGain();
+        this.playLoop();
+      }
+
+      updateGain() {
+        if (!this.ctx || !this.masterGain) return;
+        const target = this.isMuted ? 0 : this.volume;
+        this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.masterGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.02);
+      }
+
+      toggleMute() {
+        this.isMuted = !this.isMuted;
+        this.updateGain();
+        this.persist();
+      }
+
+      adjustVolume(delta) {
+        this.volume = Math.max(0, Math.min(1, Math.round((this.volume + delta) * 20) / 20));
+        if (this.volume === 0) this.isMuted = true;
+        else if (this.isMuted) this.isMuted = false;
+        this.updateGain();
+        this.persist();
+      }
+
+      playLoop() {
+        if (!this.ctx || !this.masterGain) return;
+        const notes = [
+          ["E4", 0.14], ["G4", 0.14], ["A4", 0.16], ["REST", 0.1],
+          ["E4", 0.14], ["G4", 0.14], ["B4", 0.16], ["REST", 0.1],
+          ["D4", 0.14], ["F4", 0.14], ["A4", 0.16], ["REST", 0.1]
+        ];
+        const freq = { D4: 293.66, E4: 329.63, F4: 349.23, G4: 392, A4: 440, B4: 493.88, REST: 0 };
+        let when = this.ctx.currentTime + 0.04;
+        for (const [name, dur] of notes) {
+          if (freq[name] > 0) {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "square";
+            osc.frequency.value = freq[name];
+            gain.gain.setValueAtTime(0.0001, when);
+            gain.gain.linearRampToValueAtTime(0.035, when + 0.02);
+            gain.gain.linearRampToValueAtTime(0.0001, when + dur);
+            osc.connect(gain).connect(this.masterGain);
+            osc.start(when);
+            osc.stop(when + dur);
+          }
+          when += dur;
+        }
+        const delay = Math.max(140, (when - this.ctx.currentTime - 0.1) * 1000);
+        this.loopTimer = window.setTimeout(() => this.playLoop(), delay);
+      }
+    }
+
+    const bgm = new SnakeAudioManager();
+    bgm.restore();
+
+    function refreshMusicUI() {
+      musicToggleBtn.textContent = bgm.isMuted ? "🔇" : "🔊";
+      musicToggleBtn.title = bgm.isMuted ? "开启背景音乐" : "关闭背景音乐";
+      musicVolumeText.textContent = `${Math.round(bgm.volume * 100)}%`;
+    }
 
     function getModeLabel() {
       return state.mode === "wrap" ? "穿墙" : "经典";
@@ -737,17 +897,31 @@
         event.preventDefault();
       }
 
-      if (key === "arrowup" || key === "w") setDirection(UP);
-      else if (key === "arrowdown" || key === "s") setDirection(DOWN);
-      else if (key === "arrowleft" || key === "a") setDirection(LEFT);
-      else if (key === "arrowright" || key === "d") setDirection(RIGHT);
-      else if (key === "p" && !state.gameOver) togglePause();
-      else if (key === " " && state.gameOver) resetGame();
+      if (key === "arrowup" || key === "w") {
+        bgm.ensureStarted();
+        setDirection(UP);
+      } else if (key === "arrowdown" || key === "s") {
+        bgm.ensureStarted();
+        setDirection(DOWN);
+      } else if (key === "arrowleft" || key === "a") {
+        bgm.ensureStarted();
+        setDirection(LEFT);
+      } else if (key === "arrowright" || key === "d") {
+        bgm.ensureStarted();
+        setDirection(RIGHT);
+      } else if (key === "p" && !state.gameOver) {
+        bgm.ensureStarted();
+        togglePause();
+      } else if (key === " " && state.gameOver) {
+        bgm.ensureStarted();
+        resetGame();
+      }
     });
 
     for (const button of directionButtons) {
       const dir = button.dataset.dir;
       const handle = () => {
+        bgm.ensureStarted();
         if (dir === "up") setDirection(UP);
         else if (dir === "down") setDirection(DOWN);
         else if (dir === "left") setDirection(LEFT);
@@ -761,15 +935,24 @@
     }
 
     for (const button of restartButtons) {
-      button.addEventListener("click", resetGame);
+      button.addEventListener("click", () => {
+        bgm.ensureStarted();
+        resetGame();
+      });
     }
 
     for (const button of pauseButtons) {
-      button.addEventListener("click", togglePause);
+      button.addEventListener("click", () => {
+        bgm.ensureStarted();
+        togglePause();
+      });
     }
 
     for (const button of modeButtons) {
-      button.addEventListener("click", () => setMode(button.dataset.mode));
+      button.addEventListener("click", () => {
+        bgm.ensureStarted();
+        setMode(button.dataset.mode);
+      });
     }
 
     let touchStartX = 0;
@@ -794,12 +977,33 @@
       }
     }, { passive: true });
 
+    musicToggleBtn.addEventListener("click", () => {
+      bgm.ensureStarted();
+      bgm.toggleMute();
+      refreshMusicUI();
+    });
+    musicDownBtn.addEventListener("click", () => {
+      bgm.ensureStarted();
+      bgm.adjustVolume(-0.05);
+      refreshMusicUI();
+    });
+    musicUpBtn.addEventListener("click", () => {
+      bgm.ensureStarted();
+      bgm.adjustVolume(0.05);
+      refreshMusicUI();
+    });
+
     setMode("wrap");
+    refreshMusicUI();
+    document.addEventListener("pointerdown", () => {
+      if (!bgm.isMuted) bgm.ensureStarted();
+    }, { once: true, passive: true });
 
     // 切到后台时暂停渲染，降低 CPU 占用
     let pausedByVisibility = false;
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
+        if (bgm.ctx && bgm.ctx.state === "running") bgm.ctx.suspend();
         if (!state.paused && !state.gameOver) {
           pausedByVisibility = true;
           state.paused = true;
@@ -807,6 +1011,7 @@
           updateHud();
         }
       } else {
+        if (!bgm.isMuted) bgm.ensureStarted();
         if (pausedByVisibility) {
           pausedByVisibility = false;
           state.paused = false;
