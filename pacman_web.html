@@ -1399,6 +1399,12 @@
 
     let last = 0;
     function frame(ts) {
+      // 切到后台时跳过更新/绘制，降低 CPU 占用
+      if (document.hidden) {
+        requestAnimationFrame(frame);
+        return;
+      }
+
       if (!last || ts - last >= 1000 / FPS) {
         game.update();
         game.draw();

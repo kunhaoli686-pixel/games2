@@ -386,6 +386,14 @@
                 border-radius: 16px;
             }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            #startScreen h1,
+            #winScreen h1,
+            #loseScreen h1 {
+                animation: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1404,6 +1412,12 @@
 
         // 游戏循环
         function gameLoop() {
+            // 切到后台时跳过更新/绘制，降低 CPU 占用
+            if (document.hidden) {
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+
             // 键盘控制
             if (game.state === STATE_PLAYING && !game.paused) {
                 const leftPressed = keys['ArrowLeft'] || keys['KeyA'];

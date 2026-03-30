@@ -552,10 +552,21 @@
       .btn { width: 100%; }
       .footer-card { flex-direction: column; gap: 16px; text-align: center; }
     }
+
+    /* 减少动态效果（无障碍/性能友好） */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+      html {
+        scroll-behavior: auto;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="shell">
+  <div id="top" class="shell">
     <header class="topbar">
       <div class="brand">
         <div class="brand-mark">▣</div>
