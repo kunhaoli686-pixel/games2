@@ -1,0 +1,1836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>合成大西瓜网页版</title>
+  <style>
+    :root {
+      --bg-top: #8fdfff;
+      --bg-mid: #d8f3ff;
+      --bg-bottom: #fff0bf;
+      --panel: rgba(255, 252, 244, 0.78);
+      --panel-strong: rgba(255, 248, 227, 0.92);
+      --line: rgba(160, 111, 44, 0.26);
+      --text: #5b3d1f;
+      --muted: #8f704d;
+      --accent: #ff8f4a;
+      --accent-soft: #ffd777;
+      --danger: #f16666;
+      --success: #38a57a;
+      --shadow: 0 26px 60px rgba(137, 89, 29, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      min-height: 100dvh;
+      color: var(--text);
+      font-family: "Trebuchet MS", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at 14% 12%, rgba(255, 249, 190, 0.92), transparent 16%),
+        radial-gradient(circle at 80% 18%, rgba(255, 255, 255, 0.7), transparent 16%),
+        linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 54%, var(--bg-bottom) 100%);
+      padding:
+        max(14px, env(safe-area-inset-top))
+        max(14px, env(safe-area-inset-right))
+        max(14px, env(safe-area-inset-bottom))
+        max(14px, env(safe-area-inset-left));
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      border-radius: 999px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.65;
+    }
+
+    body::before {
+      width: 260px;
+      height: 90px;
+      top: 70px;
+      left: 4vw;
+      background:
+        radial-gradient(circle at 20% 50%, rgba(255,255,255,0.95) 0 24px, transparent 25px),
+        radial-gradient(circle at 44% 40%, rgba(255,255,255,0.98) 0 30px, transparent 31px),
+        radial-gradient(circle at 64% 52%, rgba(255,255,255,0.96) 0 26px, transparent 27px),
+        radial-gradient(circle at 84% 50%, rgba(255,255,255,0.92) 0 20px, transparent 21px);
+      filter: drop-shadow(0 10px 10px rgba(167, 213, 234, 0.38));
+    }
+
+    body::after {
+      width: 190px;
+      height: 64px;
+      top: 150px;
+      right: 8vw;
+      background:
+        radial-gradient(circle at 24% 48%, rgba(255,255,255,0.95) 0 18px, transparent 19px),
+        radial-gradient(circle at 48% 42%, rgba(255,255,255,0.98) 0 22px, transparent 23px),
+        radial-gradient(circle at 72% 50%, rgba(255,255,255,0.94) 0 16px, transparent 17px);
+      filter: drop-shadow(0 10px 10px rgba(167, 213, 234, 0.3));
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(1220px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .panel {
+      border-radius: 30px;
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .game-panel {
+      padding: 20px;
+    }
+
+    .side-panel {
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+      background: var(--panel-strong);
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: clamp(30px, 4vw, 46px);
+      letter-spacing: 0.02em;
+    }
+
+    .title-wrap p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .nav-link,
+    .action-btn,
+    .touch-btn {
+      border: 1px solid rgba(147, 99, 37, 0.14);
+      background: rgba(255, 255, 255, 0.6);
+      color: var(--text);
+      border-radius: 18px;
+      text-decoration: none;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+      font: inherit;
+    }
+
+    .nav-link,
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 18px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(187, 131, 67, 0.08);
+    }
+
+    .nav-link:hover,
+    .nav-link:focus-visible,
+    .action-btn:hover,
+    .action-btn:focus-visible,
+    .touch-btn:hover,
+    .touch-btn:focus-visible {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.82);
+      border-color: rgba(147, 99, 37, 0.24);
+      box-shadow: 0 12px 24px rgba(187, 131, 67, 0.15);
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(180deg, #ffd86f 0%, #ffbf57 100%);
+      border-color: rgba(196, 139, 65, 0.35);
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      padding: 14px 16px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.56);
+      border: 1px solid rgba(147, 99, 37, 0.1);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    }
+
+    .stat-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: clamp(18px, 2.8vw, 28px);
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      padding: 16px;
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 242, 213, 0.7));
+      border: 1px solid rgba(147, 99, 37, 0.12);
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: min(100%, 560px);
+      aspect-ratio: 52 / 76;
+      margin: 0 auto;
+      border-radius: 24px;
+      border: 2px solid rgba(255, 255, 255, 0.72);
+      background: transparent;
+      box-shadow: 0 24px 50px rgba(169, 116, 38, 0.2);
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 16px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(91, 61, 31, 0.2);
+      border-radius: 24px;
+      pointer-events: none;
+    }
+
+    .overlay.show {
+      display: flex;
+    }
+
+    .overlay-card {
+      min-width: min(88%, 380px);
+      padding: 22px 24px;
+      border-radius: 22px;
+      background: rgba(151, 99, 43, 0.92);
+      color: #fff8e8;
+      text-align: center;
+      box-shadow: 0 18px 38px rgba(91, 52, 19, 0.28);
+      border: 2px solid rgba(255, 244, 220, 0.7);
+    }
+
+    .overlay-card h2 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 4vw, 42px);
+    }
+
+    .overlay-card p {
+      margin: 8px 0 0;
+      line-height: 1.7;
+      color: rgba(255, 248, 232, 0.92);
+    }
+
+    .touch-panel {
+      display: none;
+      margin-top: 16px;
+      gap: 12px;
+    }
+
+    .touch-note {
+      display: none;
+      margin-top: 10px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .touch-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(58px, 74px));
+      grid-template-areas:
+        ". up ."
+        "left drop right";
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .touch-up { grid-area: up; }
+    .touch-left { grid-area: left; }
+    .touch-drop { grid-area: drop; }
+    .touch-right { grid-area: right; }
+
+    .touch-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .touch-btn {
+      min-height: 58px;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+      box-shadow: 0 8px 18px rgba(187, 131, 67, 0.12);
+    }
+
+    .touch-action-btn {
+      font-size: 15px;
+      padding: 0 12px;
+      letter-spacing: 0.04em;
+    }
+
+    .side-panel h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .side-panel p,
+    .side-panel li {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .side-panel ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .audio-panel {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.56);
+      border: 1px solid rgba(147, 99, 37, 0.1);
+    }
+
+    .audio-panel h3 {
+      margin: 0;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    .audio-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .audio-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid rgba(147, 99, 37, 0.14);
+      background: rgba(255, 255, 255, 0.68);
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+      box-shadow: 0 6px 14px rgba(187, 131, 67, 0.08);
+    }
+
+    .audio-btn-muted {
+      opacity: 0.65;
+    }
+
+    .audio-volume {
+      min-width: 48px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .difficulty-panel {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.56);
+      border: 1px solid rgba(147, 99, 37, 0.1);
+    }
+
+    .difficulty-panel h3 {
+      margin: 0;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    .difficulty-options {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .difficulty-btn {
+      min-height: 44px;
+      padding: 0 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .difficulty-btn.active {
+      background: linear-gradient(180deg, #ffd86f 0%, #ffbf57 100%);
+      border-color: rgba(196, 139, 65, 0.35);
+      box-shadow: 0 10px 18px rgba(187, 131, 67, 0.16);
+    }
+
+    .difficulty-copy {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    .notice {
+      padding: 14px 16px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(147, 99, 37, 0.1);
+    }
+
+    .notice strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .legend-card {
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(147, 99, 37, 0.08);
+    }
+
+    .legend-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .legend-preview {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.82), transparent 30%), var(--fruit-color, #ff8f4a);
+      box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.1);
+      margin-bottom: 8px;
+    }
+
+    .legend-card strong {
+      display: block;
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    .legend-card small {
+      color: var(--muted);
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        order: -1;
+      }
+    }
+
+    @media (max-width: 760px) {
+      body::before,
+      body::after {
+        opacity: 0.45;
+        transform: scale(0.82);
+      }
+
+      .game-panel,
+      .side-panel {
+        padding: 16px;
+        border-radius: 24px;
+      }
+
+      .side-panel {
+        order: 0;
+      }
+
+      .hud {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .stat {
+        padding: 12px 14px;
+      }
+
+      .stat-value {
+        font-size: 22px;
+      }
+
+      .canvas-wrap {
+        padding: 12px;
+      }
+
+      canvas {
+        width: min(100%, 440px);
+        border-radius: 20px;
+      }
+
+      .touch-panel {
+        display: grid;
+        position: sticky;
+        bottom: calc(env(safe-area-inset-bottom) + 8px);
+        z-index: 4;
+        padding: 12px;
+        border-radius: 22px;
+        background: rgba(255, 248, 227, 0.92);
+        border: 1px solid rgba(147, 99, 37, 0.12);
+        box-shadow: 0 18px 36px rgba(137, 89, 29, 0.16);
+        backdrop-filter: blur(10px);
+      }
+
+      .touch-note {
+        display: block;
+      }
+
+      .action-row,
+      .legend {
+        grid-template-columns: 1fr;
+      }
+
+      .difficulty-options {
+        grid-template-columns: 1fr;
+      }
+
+      .audio-controls {
+        justify-content: space-between;
+      }
+    }
+
+    @media (max-width: 520px) {
+      body {
+        padding:
+          max(10px, env(safe-area-inset-top))
+          max(10px, env(safe-area-inset-right))
+          max(12px, env(safe-area-inset-bottom))
+          max(10px, env(safe-area-inset-left));
+      }
+
+      .topbar {
+        align-items: stretch;
+      }
+
+      .nav-link,
+      .action-btn {
+        width: 100%;
+      }
+
+      .canvas-wrap {
+        padding: 10px;
+      }
+
+      canvas {
+        width: 100%;
+      }
+
+      .overlay {
+        inset: 10px;
+      }
+
+      .touch-grid {
+        grid-template-columns: repeat(3, minmax(54px, 1fr));
+      }
+
+      .touch-btn {
+        min-height: 58px;
+        font-size: 20px;
+      }
+
+      .touch-actions {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .title-wrap p {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="panel game-panel">
+      <div class="topbar">
+        <div class="title-wrap">
+          <h1>合成大西瓜</h1>
+          <p>保留现有 Python 版的落点控制、碰撞挤压、同级合成和顶线判负逻辑，改写成纯前端 Canvas 网页版本。</p>
+        </div>
+        <a class="nav-link" href="index.html">返回主页</a>
+      </div>
+
+      <div class="hud">
+        <div class="stat">
+          <span class="stat-label">分数</span>
+          <span class="stat-value" id="scoreValue">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">最高分</span>
+          <span class="stat-value" id="bestValue">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">当前水果</span>
+          <span class="stat-value" id="currentValue">樱桃</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">状态</span>
+          <span class="stat-value" id="stateValue">进行中</span>
+        </div>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="game" width="520" height="760" aria-label="合成大西瓜游戏画布"></canvas>
+        <div class="overlay" id="overlay">
+          <div class="overlay-card">
+            <h2 id="overlayTitle">已暂停</h2>
+            <p id="overlayText">按 P 键或使用页面按钮继续。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="touch-panel">
+        <div class="touch-grid">
+          <button class="touch-btn touch-up" type="button" id="moveUpBtn" aria-label="微调到中间">⌖</button>
+          <button class="touch-btn touch-left" type="button" id="moveLeftBtn" aria-label="向左移动">◀</button>
+          <button class="touch-btn touch-drop" type="button" id="dropBtnBottom" aria-label="投放水果">●</button>
+          <button class="touch-btn touch-right" type="button" id="moveRightBtn" aria-label="向右移动">▶</button>
+        </div>
+        <div class="touch-actions">
+          <button class="touch-btn touch-action-btn" type="button" id="pauseBtnBottom">暂停 / 继续</button>
+          <button class="touch-btn touch-action-btn" type="button" id="restartBtnBottom">重新开始</button>
+        </div>
+        <div class="touch-note">手机上可直接在画布里左右拖动选择落点，再点中间按钮投放水果。</div>
+      </div>
+    </section>
+
+    <aside class="panel side-panel">
+      <h2>玩法说明</h2>
+      <ul>
+        <li>鼠标移动可预览落点，左键、空格或回车投放当前水果。</li>
+        <li>左右方向键或 A / D 可微调位置，手机上可用底部按钮操作。</li>
+        <li>相同水果碰到一起会自动合成更大的水果，得分也会随之提高。</li>
+        <li>如果水果持续顶住警戒线一段时间，游戏结束；不同难度的容错时间不同。</li>
+      </ul>
+
+      <div class="action-row">
+        <button class="action-btn primary" type="button" id="dropBtnSide">投放水果</button>
+        <button class="action-btn" type="button" id="pauseBtnSide">暂停 / 继续</button>
+      </div>
+
+      <div class="action-row">
+        <button class="action-btn" type="button" id="restartBtnSide">重新开始</button>
+        <button class="action-btn" type="button" id="centerBtnSide">回到中间</button>
+      </div>
+
+      <div class="notice">
+        <strong>迁移说明</strong>
+        这版网页游戏保持了原先的基础物理参数、出生权重、顶线判负和同级合成规则，主要变化集中在渲染层和网页交互适配。
+      </div>
+
+      <div class="difficulty-panel">
+        <h3>难度</h3>
+        <div class="difficulty-options">
+          <button class="action-btn difficulty-btn" type="button" data-difficulty="easy">轻松</button>
+          <button class="action-btn difficulty-btn active" type="button" data-difficulty="normal">标准</button>
+          <button class="action-btn difficulty-btn" type="button" data-difficulty="hard">硬核</button>
+        </div>
+        <div class="difficulty-copy" id="difficultyCopy">标准模式会保留当前节奏和平衡性，适合作为默认游玩方式。</div>
+      </div>
+
+      <div class="audio-panel">
+        <h3>音效</h3>
+        <div class="audio-controls">
+          <button class="audio-btn" type="button" id="audioToggleBtn" aria-label="切换音效">🔊</button>
+          <button class="audio-btn" type="button" id="audioDownBtn" aria-label="降低音量">−</button>
+          <div class="audio-volume" id="audioVolumeText">70%</div>
+          <button class="audio-btn" type="button" id="audioUpBtn" aria-label="提高音量">+</button>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-card">
+          <span>当前</span>
+          <div class="legend-preview" id="currentPreview" style="--fruit-color:#ff6b6b;"></div>
+          <strong id="currentLegendName">樱桃</strong>
+          <small>正在吊架上等待投放</small>
+        </div>
+        <div class="legend-card" id="nextLegendCard">
+          <span>下一个</span>
+          <div class="legend-preview" id="nextPreview" style="--fruit-color:#ff7aa2;"></div>
+          <strong id="nextLegendName">草莓</strong>
+          <small>提前规划连锁合成</small>
+        </div>
+      </div>
+
+      <div class="notice">
+        <strong>操作提示</strong>
+        顶部 HUD 会实时显示分数、当前水果和状态；合成时会在画面上方弹出加分提示。
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const WINDOW_WIDTH = 520;
+    const WINDOW_HEIGHT = 760;
+    const PLAY_LEFT = 60;
+    const PLAY_RIGHT = 460;
+    const PLAY_TOP = 120;
+    const PLAY_BOTTOM = 700;
+    const WARNING_LINE_Y = 175;
+
+    const FPS = 60;
+    const SUBSTEPS = 3;
+    const GRAVITY = 1800;
+    const WALL_BOUNCE = 0.28;
+    const FLOOR_BOUNCE = 0.16;
+    const MOVE_STEP = 26;
+    const DROP_COOLDOWN = 0.55;
+    const LOSE_GRACE_TIME = 2.5;
+    const BEST_SCORE_KEY = "watermelon-web-best-score";
+    const AUDIO_SETTINGS_KEY = "watermelon-web-audio-settings";
+    const DIFFICULTY_STORAGE_KEY = "watermelon-web-difficulty";
+
+    const FRUIT_TYPES = [
+      { name: "樱桃", label: "樱", radius: 16, color: "#ff6b6b", accent: "#ffd6da", shadow: "#d9485a", score: 10 },
+      { name: "草莓", label: "莓", radius: 22, color: "#ff7aa2", accent: "#ffd7e6", shadow: "#d95c84", score: 20 },
+      { name: "葡萄", label: "葡", radius: 28, color: "#9d6bff", accent: "#e7d9ff", shadow: "#7550c8", score: 35 },
+      { name: "橙子", label: "橙", radius: 34, color: "#ffac3d", accent: "#ffe0a6", shadow: "#dd8623", score: 50 },
+      { name: "番茄", label: "茄", radius: 40, color: "#ff5f5f", accent: "#ffd1c9", shadow: "#d94949", score: 75 },
+      { name: "苹果", label: "苹", radius: 48, color: "#ee4357", accent: "#ffd3db", shadow: "#bf3045", score: 110 },
+      { name: "雪梨", label: "梨", radius: 58, color: "#9fd84d", accent: "#eaffbf", shadow: "#77aa35", score: 160 },
+      { name: "桃子", label: "桃", radius: 68, color: "#ffc2b6", accent: "#ffe9e1", shadow: "#e8a39b", score: 220 },
+      { name: "菠萝", label: "萝", radius: 82, color: "#ffd450", accent: "#fff0b8", shadow: "#d5a828", score: 300 },
+      { name: "蜜瓜", label: "瓜", radius: 98, color: "#88d68a", accent: "#ddf8d2", shadow: "#5eaf65", score: 420 },
+      { name: "西瓜", label: "西", radius: 114, color: "#2db38b", accent: "#b7f0df", shadow: "#1f8a6b", score: 600 }
+    ];
+
+    const DIFFICULTIES = {
+      easy: {
+        name: "轻松",
+        gravity: 1650,
+        dropCooldown: 0.65,
+        loseGraceTime: 3.4,
+        spawnWeights: [48, 28, 14, 7, 3],
+        description: "更容易刷出小水果，掉落节奏更宽松，警戒线也会给你更多缓冲时间。"
+      },
+      normal: {
+        name: "标准",
+        gravity: GRAVITY,
+        dropCooldown: DROP_COOLDOWN,
+        loseGraceTime: LOSE_GRACE_TIME,
+        spawnWeights: [40, 28, 18, 10, 4],
+        description: "标准模式会保留当前节奏和平衡性，适合作为默认游玩方式。"
+      },
+      hard: {
+        name: "硬核",
+        gravity: 2050,
+        dropCooldown: 0.45,
+        loseGraceTime: 1.8,
+        spawnWeights: [31, 27, 21, 14, 7],
+        description: "更高重力、更短容错和更多中型水果，堆叠节奏会明显更紧张。"
+      }
+    };
+
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const prefersTouchUI = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+    const overlay = document.getElementById("overlay");
+    const overlayTitle = document.getElementById("overlayTitle");
+    const overlayText = document.getElementById("overlayText");
+    const scoreValue = document.getElementById("scoreValue");
+    const bestValue = document.getElementById("bestValue");
+    const currentValue = document.getElementById("currentValue");
+    const stateValue = document.getElementById("stateValue");
+    const currentPreview = document.getElementById("currentPreview");
+    const nextPreview = document.getElementById("nextPreview");
+    const currentLegendName = document.getElementById("currentLegendName");
+    const nextLegendName = document.getElementById("nextLegendName");
+    const nextLegendCard = document.getElementById("nextLegendCard");
+    const audioToggleBtn = document.getElementById("audioToggleBtn");
+    const audioDownBtn = document.getElementById("audioDownBtn");
+    const audioUpBtn = document.getElementById("audioUpBtn");
+    const audioVolumeText = document.getElementById("audioVolumeText");
+    const difficultyButtons = document.querySelectorAll("[data-difficulty]");
+    const difficultyCopy = document.getElementById("difficultyCopy");
+
+    const restartButtons = [
+      document.getElementById("restartBtnBottom"),
+      document.getElementById("restartBtnSide")
+    ];
+    const pauseButtons = [
+      document.getElementById("pauseBtnBottom"),
+      document.getElementById("pauseBtnSide")
+    ];
+    const dropButtons = [
+      document.getElementById("dropBtnBottom"),
+      document.getElementById("dropBtnSide")
+    ];
+    const moveLeftButtons = [
+      document.getElementById("moveLeftBtn")
+    ];
+    const moveRightButtons = [
+      document.getElementById("moveRightBtn")
+    ];
+    const centerButtons = [
+      document.getElementById("moveUpBtn"),
+      document.getElementById("centerBtnSide")
+    ];
+
+    const state = {
+      fruits: [],
+      pendingNextLevel: 0,
+      currentLevel: 0,
+      score: 0,
+      bestScore: 0,
+      comboText: "",
+      comboUntil: 0,
+      effects: [],
+      warningTime: 0,
+      lastDropTime: 0,
+      mouseX: (PLAY_LEFT + PLAY_RIGHT) / 2,
+      difficulty: "normal",
+      paused: false,
+      gameOver: false,
+      lastFrameTime: performance.now()
+    };
+
+    function loadBestScore() {
+      try {
+        const raw = localStorage.getItem(BEST_SCORE_KEY);
+        const value = Number(raw);
+        if (Number.isFinite(value) && value >= 0) {
+          state.bestScore = value;
+        }
+      } catch (_) {}
+    }
+
+    function saveBestScore() {
+      try {
+        localStorage.setItem(BEST_SCORE_KEY, String(state.bestScore));
+      } catch (_) {}
+    }
+
+    function loadDifficulty() {
+      try {
+        const saved = localStorage.getItem(DIFFICULTY_STORAGE_KEY);
+        if (saved && DIFFICULTIES[saved]) {
+          state.difficulty = saved;
+        }
+      } catch (_) {}
+    }
+
+    function saveDifficulty() {
+      try {
+        localStorage.setItem(DIFFICULTY_STORAGE_KEY, state.difficulty);
+      } catch (_) {}
+    }
+
+    function getDifficultyConfig() {
+      return DIFFICULTIES[state.difficulty] || DIFFICULTIES.normal;
+    }
+
+    function shouldHideNextHint() {
+      return state.difficulty === "hard";
+    }
+
+    function randomSpawnLevel() {
+      const weights = getDifficultyConfig().spawnWeights;
+      const total = weights.reduce((sum, value) => sum + value, 0);
+      let roll = Math.random() * total;
+      for (let i = 0; i < weights.length; i += 1) {
+        roll -= weights[i];
+        if (roll <= 0) return i;
+      }
+      return 0;
+    }
+
+    function clampSpawnX(x, radius = FRUIT_TYPES[state.currentLevel].radius) {
+      return Math.max(PLAY_LEFT + radius, Math.min(PLAY_RIGHT - radius, x));
+    }
+
+    function updatePreviewUI() {
+      const current = FRUIT_TYPES[state.currentLevel];
+      const next = FRUIT_TYPES[state.pendingNextLevel];
+      currentValue.textContent = current.name;
+      currentLegendName.textContent = current.name;
+      currentPreview.style.setProperty("--fruit-color", current.color);
+      nextLegendCard.style.display = shouldHideNextHint() ? "none" : "";
+      if (!shouldHideNextHint()) {
+        nextLegendName.textContent = next.name;
+        nextPreview.style.setProperty("--fruit-color", next.color);
+      }
+    }
+
+    function updateHud() {
+      const difficulty = getDifficultyConfig();
+      scoreValue.textContent = String(state.score);
+      bestValue.textContent = String(state.bestScore);
+      stateValue.textContent = state.gameOver
+        ? `${difficulty.name} / 结束`
+        : state.paused
+          ? `${difficulty.name} / 暂停`
+          : `${difficulty.name} / 进行中`;
+      difficultyCopy.textContent = difficulty.description;
+      difficultyButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.difficulty === state.difficulty);
+      });
+      updatePreviewUI();
+    }
+
+    function setOverlay(visible, title = "", text = "") {
+      overlay.classList.toggle("show", visible);
+      if (visible) {
+        overlayTitle.textContent = title;
+        overlayText.textContent = text;
+      }
+    }
+
+    class WatermelonAudioManager {
+      constructor() {
+        this.ctx = null;
+        this.master = null;
+        this.started = false;
+        this.isMuted = false;
+        this.volume = 0.7;
+        this.lastBounceAt = 0;
+      }
+
+      restore() {
+        try {
+          const raw = localStorage.getItem(AUDIO_SETTINGS_KEY);
+          if (!raw) return;
+          const saved = JSON.parse(raw);
+          if (typeof saved.isMuted === "boolean") this.isMuted = saved.isMuted;
+          if (typeof saved.volume === "number") this.volume = Math.max(0, Math.min(1, saved.volume));
+        } catch (_) {}
+      }
+
+      persist() {
+        try {
+          localStorage.setItem(AUDIO_SETTINGS_KEY, JSON.stringify({
+            isMuted: this.isMuted,
+            volume: this.volume
+          }));
+        } catch (_) {}
+      }
+
+      ensureStarted() {
+        if (this.started) {
+          if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+          return;
+        }
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        this.ctx = new AudioCtx();
+        this.master = this.ctx.createGain();
+        this.master.connect(this.ctx.destination);
+        this.started = true;
+        this.updateGain();
+      }
+
+      updateGain() {
+        if (!this.master || !this.ctx) return;
+        this.master.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.master.gain.setTargetAtTime(this.isMuted ? 0.0001 : Math.max(0.0001, this.volume * 0.32), this.ctx.currentTime, 0.02);
+      }
+
+      toggleMute() {
+        this.isMuted = !this.isMuted;
+        this.updateGain();
+        this.persist();
+      }
+
+      adjustVolume(delta) {
+        this.volume = Math.max(0, Math.min(1, this.volume + delta));
+        this.updateGain();
+        this.persist();
+      }
+
+      playTone({ frequency, duration = 0.14, type = "sine", volume = 0.28, when = 0, slideTo = null }) {
+        this.ensureStarted();
+        if (!this.ctx || !this.master) return;
+        const startAt = this.ctx.currentTime + when;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(frequency, startAt);
+        if (slideTo) {
+          osc.frequency.exponentialRampToValueAtTime(slideTo, startAt + duration);
+        }
+        gain.gain.setValueAtTime(0.0001, startAt);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), startAt + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+        osc.connect(gain);
+        gain.connect(this.master);
+        osc.start(startAt);
+        osc.stop(startAt + duration + 0.03);
+      }
+
+      playDrop() {
+        if (this.isMuted) return;
+        this.playTone({ frequency: 360, slideTo: 260, duration: 0.09, type: "triangle", volume: 0.18 });
+      }
+
+      playMerge(level) {
+        if (this.isMuted) return;
+        const base = 420 + level * 22;
+        this.playTone({ frequency: base, slideTo: base * 1.18, duration: 0.16, type: "triangle", volume: 0.18 });
+        this.playTone({ frequency: base * 1.5, slideTo: base * 1.7, duration: 0.22, type: "sine", volume: 0.12, when: 0.04 });
+      }
+
+      playBounce(strength = 0.2) {
+        if (this.isMuted || strength < 0.14) return;
+        const now = performance.now();
+        if (now - this.lastBounceAt < 70) return;
+        this.lastBounceAt = now;
+        this.playTone({
+          frequency: 170 + strength * 160,
+          slideTo: 120 + strength * 60,
+          duration: 0.05 + strength * 0.04,
+          type: "triangle",
+          volume: 0.05 + strength * 0.08
+        });
+      }
+
+      playGameOver() {
+        if (this.isMuted) return;
+        this.playTone({ frequency: 320, slideTo: 220, duration: 0.18, type: "sawtooth", volume: 0.14 });
+        this.playTone({ frequency: 240, slideTo: 150, duration: 0.24, type: "triangle", volume: 0.13, when: 0.12 });
+      }
+    }
+
+    const audio = new WatermelonAudioManager();
+
+    function refreshAudioUI() {
+      audioToggleBtn.textContent = audio.isMuted ? "🔇" : "🔊";
+      audioToggleBtn.classList.toggle("audio-btn-muted", audio.isMuted);
+      audioToggleBtn.title = audio.isMuted ? "开启音效" : "关闭音效";
+      audioVolumeText.textContent = `${Math.round(audio.volume * 100)}%`;
+    }
+
+    function resetGame() {
+      state.fruits = [];
+      state.score = 0;
+      state.comboText = "";
+      state.comboUntil = 0;
+      state.effects = [];
+      state.warningTime = 0;
+      state.lastDropTime = 0;
+      state.paused = false;
+      state.gameOver = false;
+      state.pendingNextLevel = randomSpawnLevel();
+      state.currentLevel = randomSpawnLevel();
+      state.mouseX = (PLAY_LEFT + PLAY_RIGHT) / 2;
+      state.lastFrameTime = performance.now();
+      setOverlay(false);
+      updateHud();
+    }
+
+    function createFruit(x, y, level, vx = 0, vy = 0, age = 0) {
+      return { x, y, level, vx, vy, age, pulse: 0 };
+    }
+
+    function fruitRadius(fruit) {
+      return FRUIT_TYPES[fruit.level].radius;
+    }
+
+    function resolveBounds(fruit) {
+      const r = fruitRadius(fruit);
+
+      if (fruit.x - r < PLAY_LEFT) {
+        fruit.x = PLAY_LEFT + r;
+        fruit.vx = Math.abs(fruit.vx) * WALL_BOUNCE;
+        audio.playBounce(Math.min(1, Math.abs(fruit.vx) / 220));
+      } else if (fruit.x + r > PLAY_RIGHT) {
+        fruit.x = PLAY_RIGHT - r;
+        fruit.vx = -Math.abs(fruit.vx) * WALL_BOUNCE;
+        audio.playBounce(Math.min(1, Math.abs(fruit.vx) / 220));
+      }
+
+      if (fruit.y + r > PLAY_BOTTOM) {
+        fruit.y = PLAY_BOTTOM - r;
+        const impact = Math.abs(fruit.vy);
+        if (Math.abs(fruit.vy) < 110) {
+          fruit.vy = 0;
+        } else {
+          fruit.vy = -fruit.vy * FLOOR_BOUNCE;
+        }
+        fruit.vx *= 0.96;
+        audio.playBounce(Math.min(1, impact / 420));
+      }
+
+      fruit.vx *= 0.997;
+      if (Math.abs(fruit.vx) < 2) {
+        fruit.vx = 0;
+      }
+    }
+
+    function resolveCollisionsAndMerges() {
+      const merges = [];
+      const usedIndexes = new Set();
+      const count = state.fruits.length;
+
+      for (let i = 0; i < count; i += 1) {
+        const a = state.fruits[i];
+        for (let j = i + 1; j < count; j += 1) {
+          const b = state.fruits[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const distanceSq = dx * dx + dy * dy;
+          const minDistance = fruitRadius(a) + fruitRadius(b);
+          if (distanceSq >= minDistance * minDistance) continue;
+
+          const distance = distanceSq > 1e-9 ? Math.sqrt(distanceSq) : 0;
+          const nx = distance === 0 ? 1 : dx / distance;
+          const ny = distance === 0 ? 0 : dy / distance;
+
+          const overlap = minDistance - distance;
+          const push = overlap / 2;
+          a.x -= nx * push;
+          a.y -= ny * push;
+          b.x += nx * push;
+          b.y += ny * push;
+          resolveBounds(a);
+          resolveBounds(b);
+
+          const relVx = b.vx - a.vx;
+          const relVy = b.vy - a.vy;
+          const speedAlongNormal = relVx * nx + relVy * ny;
+          if (speedAlongNormal < 0) {
+            const impulse = -1.08 * speedAlongNormal / 2;
+            a.vx -= impulse * nx;
+            a.vy -= impulse * ny;
+            b.vx += impulse * nx;
+            b.vy += impulse * ny;
+          }
+
+          if (
+            a.level === b.level &&
+            a.level < FRUIT_TYPES.length - 1 &&
+            a.age > 0.15 &&
+            b.age > 0.15 &&
+            !usedIndexes.has(i) &&
+            !usedIndexes.has(j)
+          ) {
+            usedIndexes.add(i);
+            usedIndexes.add(j);
+            merges.push([i, j]);
+          }
+        }
+      }
+
+      if (!merges.length) return;
+
+      const mergedIndexes = new Set(merges.flat());
+      const survivors = [];
+      state.fruits.forEach((fruit, index) => {
+        if (!mergedIndexes.has(index)) {
+          survivors.push(fruit);
+        }
+      });
+
+      merges.forEach(([leftIndex, rightIndex]) => {
+        const left = state.fruits[leftIndex];
+        const right = state.fruits[rightIndex];
+        const newLevel = left.level + 1;
+        const mergeX = (left.x + right.x) / 2;
+        const mergeY = (left.y + right.y) / 2;
+        const merged = createFruit(
+          clampSpawnX(mergeX, FRUIT_TYPES[newLevel].radius),
+          Math.min(PLAY_BOTTOM - FRUIT_TYPES[newLevel].radius, mergeY),
+          newLevel,
+          (left.vx + right.vx) / 2,
+          Math.min(left.vy, right.vy) * 0.2,
+          0
+        );
+        merged.pulse = 0.34;
+        survivors.push(merged);
+        state.score += FRUIT_TYPES[newLevel].score;
+        state.comboText = `+${FRUIT_TYPES[newLevel].score}  ${FRUIT_TYPES[newLevel].name}`;
+        state.comboUntil = performance.now() + 800;
+        spawnMergeEffect(mergeX, mergeY, newLevel);
+        audio.playMerge(newLevel);
+      });
+
+      state.fruits = survivors;
+      state.bestScore = Math.max(state.bestScore, state.score);
+      saveBestScore();
+      updateHud();
+    }
+
+    function update(dt) {
+      const stepDt = dt / SUBSTEPS;
+      for (let step = 0; step < SUBSTEPS; step += 1) {
+        state.fruits.forEach((fruit) => {
+          fruit.age += stepDt;
+          fruit.pulse = Math.max(0, fruit.pulse - stepDt * 1.8);
+          fruit.vy += getDifficultyConfig().gravity * stepDt;
+          fruit.x += fruit.vx * stepDt;
+          fruit.y += fruit.vy * stepDt;
+          resolveBounds(fruit);
+        });
+        resolveCollisionsAndMerges();
+      }
+
+      state.effects = state.effects
+        .map((effect) => ({
+          ...effect,
+          life: effect.life - dt,
+          age: effect.age + dt,
+          particles: effect.particles.map((particle) => ({
+            ...particle,
+            x: particle.x + particle.vx * dt,
+            y: particle.y + particle.vy * dt,
+            vy: particle.vy + 120 * dt
+          }))
+        }))
+        .filter((effect) => effect.life > 0);
+
+      if (state.fruits.some((fruit) => fruit.y - fruitRadius(fruit) < WARNING_LINE_Y)) {
+        state.warningTime += dt;
+        if (state.warningTime >= getDifficultyConfig().loseGraceTime) {
+          state.gameOver = true;
+          state.bestScore = Math.max(state.bestScore, state.score);
+          saveBestScore();
+          audio.playGameOver();
+          setOverlay(true, "游戏结束", `最终分数 ${state.score}，按 R 键或按钮重新开始。`);
+        }
+      } else {
+        state.warningTime = Math.max(0, state.warningTime - dt * 1.8);
+      }
+
+      updateHud();
+    }
+
+    function hexToRgb(value) {
+      const clean = value.replace("#", "");
+      return [
+        Number.parseInt(clean.slice(0, 2), 16),
+        Number.parseInt(clean.slice(2, 4), 16),
+        Number.parseInt(clean.slice(4, 6), 16)
+      ];
+    }
+
+    function blend(colorA, colorB, ratio) {
+      const mix = Math.max(0, Math.min(1, ratio));
+      const [ra, ga, ba] = hexToRgb(colorA);
+      const [rb, gb, bb] = hexToRgb(colorB);
+      const value = [ra, ga, ba].map((component, index) => {
+        const target = [rb, gb, bb][index];
+        return Math.round(component + (target - component) * mix);
+      });
+      return `rgb(${value[0]}, ${value[1]}, ${value[2]})`;
+    }
+
+    function rgbaFromHex(color, alpha) {
+      const [r, g, b] = hexToRgb(color);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function spawnMergeEffect(x, y, level) {
+      const spec = FRUIT_TYPES[level];
+      const particles = Array.from({ length: 8 }, (_, index) => {
+        const angle = (Math.PI * 2 * index) / 8 + Math.random() * 0.28;
+        const speed = 60 + Math.random() * 70;
+        return {
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 16,
+          radius: 4 + Math.random() * 5,
+          color: index % 2 === 0 ? spec.accent : spec.color
+        };
+      });
+      state.effects.push({
+        x,
+        y,
+        radius: spec.radius,
+        life: 0.5,
+        age: 0,
+        color: spec.color,
+        accent: spec.accent,
+        particles
+      });
+    }
+
+    function drawBackground() {
+      const skyGradient = ctx.createLinearGradient(0, 0, 0, WINDOW_HEIGHT);
+      skyGradient.addColorStop(0, "#b7ecff");
+      skyGradient.addColorStop(0.56, "#e9f9ff");
+      skyGradient.addColorStop(1, "#fff3c7");
+      ctx.fillStyle = skyGradient;
+      ctx.fillRect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+      ctx.fillStyle = "#fff4a8";
+      ctx.beginPath();
+      ctx.arc(56, 40, 46, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fff8cf";
+      ctx.beginPath();
+      ctx.arc(56, 40, 28, 0, Math.PI * 2);
+      ctx.fill();
+
+      drawCloud(42, 98, 0.86);
+      drawCloud(346, 90, 0.72);
+      drawCloud(386, 164, 0.5);
+
+      const deskGradient = ctx.createLinearGradient(0, PLAY_BOTTOM + 6, 0, WINDOW_HEIGHT);
+      deskGradient.addColorStop(0, "#e4b676");
+      deskGradient.addColorStop(1, "#bc7b3f");
+      ctx.fillStyle = deskGradient;
+      ctx.fillRect(0, PLAY_BOTTOM + 6, WINDOW_WIDTH, WINDOW_HEIGHT - PLAY_BOTTOM - 6);
+      ctx.fillStyle = "#f7d398";
+      ctx.fillRect(0, PLAY_BOTTOM + 16, WINDOW_WIDTH, 4);
+    }
+
+    function drawCloud(x, y, scale) {
+      const puffs = [
+        [0, 0, 36],
+        [28, -10, 28],
+        [55, 3, 24],
+        [18, 10, 30]
+      ];
+      ctx.fillStyle = "#dcecf7";
+      puffs.forEach(([dx, dy, radius]) => {
+        ctx.beginPath();
+        ctx.ellipse(x + dx * scale, y + dy * scale + 6, radius * scale, radius * scale * 0.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.fillStyle = "#ffffff";
+      puffs.forEach(([dx, dy, radius]) => {
+        ctx.beginPath();
+        ctx.ellipse(x + dx * scale, y + dy * scale, radius * scale, radius * scale * 0.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function drawRoundCard(x, y, width, height, fill, outline, shadowColor) {
+      const radius = 22;
+      if (shadowColor) {
+        roundedRect(x + 4, y + 6, width, height, radius);
+        ctx.fillStyle = shadowColor;
+        ctx.fill();
+      }
+      roundedRect(x, y, width, height, radius);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = outline;
+      ctx.stroke();
+    }
+
+    function roundedRect(x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    }
+
+    function drawPlayfield() {
+      ctx.fillStyle = "#cc9b61";
+      ctx.fillRect(PLAY_LEFT + 7, PLAY_TOP + 10, PLAY_RIGHT - PLAY_LEFT + 5, PLAY_BOTTOM - PLAY_TOP + 4);
+
+      const fieldGradient = ctx.createLinearGradient(0, PLAY_TOP, 0, PLAY_BOTTOM);
+      fieldGradient.addColorStop(0, "#fffefb");
+      fieldGradient.addColorStop(1, "#ffe9b6");
+      ctx.fillStyle = fieldGradient;
+      ctx.fillRect(PLAY_LEFT, PLAY_TOP, PLAY_RIGHT - PLAY_LEFT, PLAY_BOTTOM - PLAY_TOP);
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = "#c58b4a";
+      ctx.strokeRect(PLAY_LEFT, PLAY_TOP, PLAY_RIGHT - PLAY_LEFT, PLAY_BOTTOM - PLAY_TOP);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.moveTo(PLAY_LEFT + 12, PLAY_TOP + 4);
+      ctx.lineTo(PLAY_LEFT + 12, PLAY_BOTTOM - 10);
+      ctx.stroke();
+      ctx.strokeStyle = "#f8dcb0";
+      ctx.beginPath();
+      ctx.moveTo(PLAY_RIGHT - 12, PLAY_TOP + 4);
+      ctx.lineTo(PLAY_RIGHT - 12, PLAY_BOTTOM - 10);
+      ctx.stroke();
+
+      ctx.fillStyle = "#ffe0ae";
+      ctx.strokeStyle = "#c58b4a";
+      ctx.lineWidth = 3;
+      ctx.fillRect(PLAY_LEFT - 12, PLAY_TOP - 16, PLAY_RIGHT - PLAY_LEFT + 24, 28);
+      ctx.strokeRect(PLAY_LEFT - 12, PLAY_TOP - 16, PLAY_RIGHT - PLAY_LEFT + 24, 28);
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(PLAY_LEFT + 16, PLAY_TOP + 16, PLAY_RIGHT - PLAY_LEFT - 32, PLAY_BOTTOM - PLAY_TOP - 38);
+    }
+
+    function drawPreviewFruit(centerX, centerY, level, scale) {
+      const spec = FRUIT_TYPES[level];
+      const radius = spec.radius * scale;
+      ctx.fillStyle = spec.shadow;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = spec.color;
+      ctx.strokeStyle = "#99643b";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY - 3, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = spec.accent;
+      ctx.beginPath();
+      ctx.ellipse(centerX - radius * 0.25, centerY - radius * 0.5, radius * 0.3, radius * 0.22, -0.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#fffdf4";
+      ctx.font = `bold ${Math.max(10, Math.floor(radius * 0.55))}px "Trebuchet MS", "PingFang SC", sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(spec.label, centerX, centerY + radius * 0.12);
+    }
+
+    function drawDropper(guideX, radius) {
+      ctx.setLineDash([5, 6]);
+      ctx.strokeStyle = "#f3c4d6";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(guideX, PLAY_TOP - 28);
+      ctx.lineTo(guideX, PLAY_BOTTOM - 8);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.beginPath();
+      ctx.setLineDash([4, 3]);
+      ctx.fillStyle = blend(FRUIT_TYPES[state.currentLevel].accent, "#ffffff", 0.25);
+      ctx.strokeStyle = "#d49db0";
+      ctx.lineWidth = 2;
+      ctx.arc(guideX, PLAY_TOP - 70, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#f8d57a";
+      ctx.strokeStyle = "#c58b4a";
+      ctx.lineWidth = 2;
+      ctx.fillRect(guideX - 14, PLAY_TOP - 102, 28, 18);
+      ctx.strokeRect(guideX - 14, PLAY_TOP - 102, 28, 18);
+      ctx.fillRect(guideX - 6, PLAY_TOP - 84, 12, 20);
+      ctx.strokeRect(guideX - 6, PLAY_TOP - 84, 12, 20);
+    }
+
+    function drawFruit(fruit) {
+      const spec = FRUIT_TYPES[fruit.level];
+      const scaleBoost = 1 + Math.sin(Math.min(1, fruit.pulse / 0.34) * Math.PI) * 0.14;
+      const r = spec.radius * scaleBoost;
+      const squash = Math.min(8, r * 0.08);
+
+      ctx.fillStyle = "#d6a37b";
+      ctx.beginPath();
+      ctx.ellipse(fruit.x, fruit.y + r * 0.74, r * 0.78, r * 0.16, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = spec.shadow;
+      ctx.beginPath();
+      ctx.arc(fruit.x, fruit.y + 2, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = spec.color;
+      ctx.strokeStyle = "#8f6037";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(fruit.x, fruit.y - squash, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = spec.accent;
+      ctx.beginPath();
+      ctx.ellipse(fruit.x - r * 0.24, fruit.y - r * 0.58, r * 0.34, r * 0.21, -0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (fruit.level >= 1) {
+        ctx.strokeStyle = "#5c3b1f";
+        ctx.lineWidth = Math.max(2, Math.floor(r * 0.11));
+        ctx.beginPath();
+        ctx.moveTo(fruit.x, fruit.y - r * 0.92);
+        ctx.quadraticCurveTo(fruit.x + r * 0.03, fruit.y - r * 1.12, fruit.x + r * 0.08, fruit.y - r * 1.18);
+        ctx.stroke();
+
+        ctx.fillStyle = fruit.level < 8 ? "#5aaf4d" : "#4d9c45";
+        ctx.beginPath();
+        ctx.ellipse(fruit.x + r * 0.22, fruit.y - r * 0.92, r * 0.22, r * 0.12, -0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const eyeR = Math.max(1.8, r * 0.08);
+      const eyeY = fruit.y - r * 0.08;
+      const eyeDx = r * 0.26;
+      ctx.fillStyle = "#3b2b23";
+      ctx.beginPath();
+      ctx.arc(fruit.x - eyeDx, eyeY, eyeR, 0, Math.PI * 2);
+      ctx.arc(fruit.x + eyeDx, eyeY, eyeR, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#3b2b23";
+      ctx.lineWidth = Math.max(2, Math.floor(r * 0.05));
+      ctx.beginPath();
+      ctx.arc(fruit.x, fruit.y + r * 0.14, r * 0.18, 0.3, Math.PI - 0.3, false);
+      ctx.stroke();
+    }
+
+    function drawEffects() {
+      state.effects.forEach((effect) => {
+        const progress = 1 - effect.life / 0.5;
+        ctx.save();
+        ctx.globalAlpha = 0.42 * (1 - progress);
+        ctx.strokeStyle = rgbaFromHex(effect.color, 0.95 - progress * 0.6);
+        ctx.lineWidth = 6 * (1 - progress * 0.5);
+        ctx.beginPath();
+        ctx.arc(effect.x, effect.y, effect.radius * (0.8 + progress * 0.65), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        ctx.globalAlpha = 0.32 * (1 - progress);
+        ctx.fillStyle = rgbaFromHex(effect.accent, 0.9 - progress * 0.5);
+        ctx.beginPath();
+        ctx.arc(effect.x, effect.y, effect.radius * (0.28 + progress * 0.22), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        effect.particles.forEach((particle) => {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, effect.life / 0.5);
+          ctx.fillStyle = particle.color;
+          ctx.beginPath();
+          ctx.arc(particle.x, particle.y, particle.radius * (0.6 + effect.life), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+      });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+      drawBackground();
+      drawRoundCard(26, 24, WINDOW_WIDTH - 52, 76, "#ffeaa7", "#d19a47", "#eec47f");
+
+      ctx.fillStyle = "#8d5a20";
+      ctx.font = 'bold 24px "Trebuchet MS", "PingFang SC", sans-serif';
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText("合成大西瓜", 46, 52);
+      ctx.fillStyle = "#8a6c47";
+      ctx.font = '11px "Trebuchet MS", "PingFang SC", sans-serif';
+      ctx.fillText("鼠标移动位置，点击 / 空格投放；P 暂停；R 重开", 46, 76);
+
+      drawRoundCard(24, 114, PLAY_LEFT - 36, 106, "#fff6e0", "#d8b985", "#efd6b4");
+      drawRoundCard(PLAY_RIGHT + 12, 114, WINDOW_WIDTH - PLAY_RIGHT - 36, 156, "#fff6e0", "#d8b985", "#efd6b4");
+
+      ctx.fillStyle = "#b57b2f";
+      ctx.font = 'bold 10px "Trebuchet MS", "PingFang SC", sans-serif';
+      ctx.textAlign = "center";
+      ctx.fillText("SCORE", 42, 140);
+      ctx.fillStyle = "#d24d57";
+      ctx.font = 'bold 20px "Trebuchet MS", "PingFang SC", sans-serif';
+      ctx.fillText(String(state.score), 42, 174);
+      ctx.fillStyle = "#8a6c47";
+      ctx.font = 'bold 10px "Trebuchet MS", "PingFang SC", sans-serif';
+      ctx.fillText(`BEST ${state.bestScore}`, 42, 204);
+
+      ctx.fillStyle = "#b57b2f";
+      ctx.fillText("当前", WINDOW_WIDTH - 66, 140);
+      drawPreviewFruit(WINDOW_WIDTH - 66, 182, state.currentLevel, 0.68);
+      ctx.fillStyle = "#8a6c47";
+      ctx.font = '10px "Trebuchet MS", "PingFang SC", sans-serif';
+      ctx.fillText(FRUIT_TYPES[state.currentLevel].name, WINDOW_WIDTH - 66, 220);
+      if (!shouldHideNextHint()) {
+        ctx.fillStyle = "#b57b2f";
+        ctx.font = 'bold 11px "Trebuchet MS", "PingFang SC", sans-serif';
+        ctx.fillText("下一个", WINDOW_WIDTH - 66, 242);
+        drawPreviewFruit(WINDOW_WIDTH - 66, 286, state.pendingNextLevel, 0.56);
+      }
+
+      drawPlayfield();
+      ctx.setLineDash([8, 6]);
+      ctx.strokeStyle = state.warningTime > 0 ? "#f16666" : "#f3be5b";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(PLAY_LEFT + 5, WARNING_LINE_Y);
+      ctx.lineTo(PLAY_RIGHT - 5, WARNING_LINE_Y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      if (state.warningTime > 0) {
+        const ratio = Math.min(1, state.warningTime / getDifficultyConfig().loseGraceTime);
+        ctx.fillStyle = "#e76f51";
+        ctx.fillRect(PLAY_LEFT, PLAY_TOP - 16, (PLAY_RIGHT - PLAY_LEFT) * ratio, 12);
+        ctx.fillStyle = "#bc4749";
+        ctx.font = 'bold 10px "Trebuchet MS", "PingFang SC", sans-serif';
+        ctx.textAlign = "left";
+        ctx.fillText("危险", PLAY_LEFT, PLAY_TOP - 24);
+      }
+
+      const guideX = clampSpawnX(state.mouseX);
+      drawDropper(guideX, FRUIT_TYPES[state.currentLevel].radius);
+
+      [...state.fruits]
+        .sort((left, right) => fruitRadius(left) - fruitRadius(right))
+        .forEach(drawFruit);
+
+      drawEffects();
+
+      if (state.comboText && performance.now() < state.comboUntil) {
+        const comboProgress = Math.max(0, (state.comboUntil - performance.now()) / 800);
+        ctx.fillStyle = rgbaFromHex("#2f9f78", 0.55 + comboProgress * 0.45);
+        ctx.font = `bold ${14 + comboProgress * 6}px "Trebuchet MS", "PingFang SC", sans-serif`;
+        ctx.textAlign = "center";
+        ctx.fillText(state.comboText, WINDOW_WIDTH / 2, 112);
+      }
+    }
+
+    function dropFruit() {
+      if (state.paused || state.gameOver) return;
+      audio.ensureStarted();
+      const now = performance.now();
+      if ((now - state.lastDropTime) / 1000 < getDifficultyConfig().dropCooldown) return;
+
+      const created = createFruit(clampSpawnX(state.mouseX), PLAY_TOP - 30, state.currentLevel);
+      created.pulse = 0.14;
+      state.fruits.push(created);
+      state.currentLevel = state.pendingNextLevel;
+      state.pendingNextLevel = randomSpawnLevel();
+      state.lastDropTime = now;
+      audio.playDrop();
+      updateHud();
+    }
+
+    function togglePause() {
+      if (state.gameOver) return;
+      state.paused = !state.paused;
+      if (state.paused) {
+        setOverlay(true, "已暂停", "按 P 键或使用页面按钮继续。");
+      } else {
+        state.lastFrameTime = performance.now();
+        setOverlay(false);
+      }
+      updateHud();
+    }
+
+    function moveGuide(delta) {
+      state.mouseX = clampSpawnX(state.mouseX + delta);
+    }
+
+    function centerGuide() {
+      state.mouseX = (PLAY_LEFT + PLAY_RIGHT) / 2;
+    }
+
+    function pointerToCanvasX(event) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      return (event.clientX - rect.left) * scaleX;
+    }
+
+    canvas.addEventListener("pointermove", (event) => {
+      if (prefersTouchUI && event.pointerType === "touch") {
+        event.preventDefault();
+      }
+      state.mouseX = clampSpawnX(pointerToCanvasX(event));
+    });
+
+    canvas.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      audio.ensureStarted();
+      state.mouseX = clampSpawnX(pointerToCanvasX(event));
+      if (!prefersTouchUI || event.pointerType === "mouse") {
+        dropFruit();
+      }
+    });
+
+    canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+
+    document.addEventListener("keydown", (event) => {
+      if (["ArrowLeft", "ArrowRight", "Space", "Enter", "KeyA", "KeyD", "KeyP", "KeyR"].includes(event.code)) {
+        audio.ensureStarted();
+      }
+      if (["ArrowLeft", "ArrowRight", "Space", "Enter", "KeyA", "KeyD", "KeyP", "KeyR"].includes(event.code)) {
+        event.preventDefault();
+      }
+
+      if (event.code === "ArrowLeft" || event.code === "KeyA") {
+        moveGuide(-MOVE_STEP);
+      } else if (event.code === "ArrowRight" || event.code === "KeyD") {
+        moveGuide(MOVE_STEP);
+      } else if (event.code === "Space" || event.code === "Enter") {
+        if (state.gameOver) {
+          resetGame();
+        } else {
+          dropFruit();
+        }
+      } else if (event.code === "KeyP") {
+        togglePause();
+      } else if (event.code === "KeyR") {
+        resetGame();
+      }
+    });
+
+    restartButtons.forEach((button) => {
+      if (!button) return;
+      button.addEventListener("click", () => {
+        audio.ensureStarted();
+        resetGame();
+      });
+    });
+
+    pauseButtons.forEach((button) => {
+      if (!button) return;
+      button.addEventListener("click", () => {
+        audio.ensureStarted();
+        togglePause();
+      });
+    });
+
+    dropButtons.forEach((button) => {
+      if (!button) return;
+      button.addEventListener("click", () => {
+        audio.ensureStarted();
+        dropFruit();
+      });
+    });
+
+    moveLeftButtons.forEach((button) => {
+      if (!button) return;
+      button.addEventListener("click", () => {
+        audio.ensureStarted();
+        moveGuide(-MOVE_STEP);
+      });
+    });
+
+    moveRightButtons.forEach((button) => {
+      if (!button) return;
+      button.addEventListener("click", () => {
+        audio.ensureStarted();
+        moveGuide(MOVE_STEP);
+      });
+    });
+
+    centerButtons.forEach((button) => {
+      if (!button) return;
+      button.addEventListener("click", () => {
+        audio.ensureStarted();
+        centerGuide();
+      });
+    });
+
+    difficultyButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const nextDifficulty = button.dataset.difficulty;
+        if (!DIFFICULTIES[nextDifficulty] || nextDifficulty === state.difficulty) return;
+        audio.ensureStarted();
+        state.difficulty = nextDifficulty;
+        saveDifficulty();
+        resetGame();
+      });
+    });
+
+    audioToggleBtn.addEventListener("click", () => {
+      audio.ensureStarted();
+      audio.toggleMute();
+      refreshAudioUI();
+    });
+
+    audioDownBtn.addEventListener("click", () => {
+      audio.ensureStarted();
+      audio.adjustVolume(-0.05);
+      refreshAudioUI();
+    });
+
+    audioUpBtn.addEventListener("click", () => {
+      audio.ensureStarted();
+      audio.adjustVolume(0.05);
+      refreshAudioUI();
+    });
+
+    function gameLoop(now) {
+      const dt = Math.min((now - state.lastFrameTime) / 1000, 0.03);
+      state.lastFrameTime = now;
+
+      if (!state.paused && !state.gameOver) {
+        update(dt);
+      }
+
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    loadBestScore();
+    loadDifficulty();
+    audio.restore();
+    refreshAudioUI();
+    resetGame();
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
