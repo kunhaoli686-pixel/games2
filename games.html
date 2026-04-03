@@ -484,10 +484,45 @@
         var(--bg-base);
     }
 
+    .preview-2048 {
+      background:
+        radial-gradient(circle at 78% 18%, rgba(255, 190, 92, 0.2), transparent 24%),
+        radial-gradient(circle at 22% 76%, rgba(255, 122, 89, 0.14), transparent 28%),
+        linear-gradient(145deg, rgba(103, 61, 31, 0.42), rgba(26, 18, 15, 0.94)),
+        var(--bg-base);
+    }
+
     .preview-content {
       position: relative;
       z-index: 2;
     }
+
+    .number-stack {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(2, 56px);
+      gap: 8px;
+    }
+
+    .number-stack span {
+      display: grid;
+      place-items: center;
+      height: 56px;
+      border-radius: 14px;
+      color: #2c2118;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
+    }
+
+    .number-stack .n2 { background: #f6e7d5; }
+    .number-stack .n4 { background: #f4d9bb; }
+    .number-stack .n8 { background: #f9c27b; }
+    .number-stack .n16 { background: linear-gradient(135deg, #ffe38a, #ffba49); }
 
     .badge-row {
       display: flex;
@@ -652,11 +687,11 @@
         <div class="pill">Arcade Hub</div>
         <h2>一键开启<br>复古游戏时光</h2>
         <p>
-          完美复刻经典街机体验。纯前端构建，无需安装环境，打开浏览器即可随时随地畅玩打砖块、贪吃蛇、吃豆人与合成大西瓜。
+          完美复刻经典街机体验。纯前端构建，无需安装环境，打开浏览器即可随时随地畅玩打砖块、贪吃蛇、吃豆人、合成大西瓜与 2048 数字拼图。
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#games">马上开玩</a>
-          <a class="btn btn-secondary" href="watermelon_web.html">体验合成大西瓜</a>
+          <a class="btn btn-secondary" href="2048_web.html">体验 2048</a>
         </div>
       </article>
 
@@ -667,7 +702,7 @@
         </div>
         <div class="spotlight">
           <strong>⭐️ 本期推荐</strong>
-          <p style="color: rgba(255,255,255,0.8); margin:0;">合成大西瓜网页版现已加入主页，保留原有碰撞与合成逻辑，同时支持桌面和移动端触控游玩。</p>
+          <p style="color: rgba(255,255,255,0.8); margin:0;">2048 数字拼图现已加入主页，支持键盘方向键、移动端滑动和触控方向按钮，打开页面就能直接挑战高分。</p>
         </div>
         <div>
           <h3>收录清单</h3>
@@ -676,6 +711,7 @@
             <li>Snake V2 - 穿墙贪吃蛇</li>
             <li>Pac-Man - 吃豆人迷宫</li>
             <li>Watermelon Merge - 合成大西瓜</li>
+            <li>2048 - 数字合并拼图</li>
           </ul>
         </div>
       </aside>
@@ -688,6 +724,32 @@
       </div>
 
       <div class="games">
+        <article class="game-card glass-card">
+          <div class="preview preview-2048">
+            <div class="number-stack" aria-hidden="true">
+              <span class="n2">2</span>
+              <span class="n4">4</span>
+              <span class="n8">8</span>
+              <span class="n16">16</span>
+            </div>
+            <div class="preview-content">
+              <div class="badge-row">
+                <span class="badge">数字合并</span>
+                <span class="badge">策略解谜</span>
+              </div>
+              <h4>2048</h4>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="meta">通过滑动把相同数字不断翻倍，稳住角落、整理棋盘，一步步冲击 2048 甚至更高分数。</p>
+            <div class="controls">
+              <strong>控制方式</strong>
+              <div class="command">方向键 / WASD 控制移动；移动端支持在棋盘上滑动，也提供触控方向按钮。</div>
+            </div>
+            <a class="play-link" href="2048_web.html">启动游戏</a>
+          </div>
+        </article>
+
         <article class="game-card glass-card">
           <div class="preview preview-breakout">
             <div class="preview-content">
