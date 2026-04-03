@@ -659,7 +659,7 @@
           <button class="touch-btn touch-action-btn" type="button" id="pauseBtnBottom">暂停 / 继续</button>
           <button class="touch-btn touch-action-btn" type="button" id="restartBtnBottom">重新开始</button>
         </div>
-        <div class="touch-note">手机上可直接在画布里左右拖动选择落点，再点中间按钮投放水果。</div>
+        <div class="touch-note">手机上直接点击画布即可放下水果。</div>
       </div>
     </section>
 
@@ -1704,9 +1704,7 @@
       event.preventDefault();
       audio.ensureStarted();
       state.mouseX = clampSpawnX(pointerToCanvasX(event));
-      if (!prefersTouchUI || event.pointerType === "mouse") {
-        dropFruit();
-      }
+      dropFruit();
     });
 
     canvas.addEventListener("contextmenu", (event) => event.preventDefault());
