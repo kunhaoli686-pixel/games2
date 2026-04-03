@@ -659,14 +659,14 @@
           <button class="touch-btn touch-action-btn" type="button" id="pauseBtnBottom">暂停 / 继续</button>
           <button class="touch-btn touch-action-btn" type="button" id="restartBtnBottom">重新开始</button>
         </div>
-        <div class="touch-note">手机上直接点击画布即可放下水果。</div>
+        <div class="touch-note">在画布上滑动调整落点，轻点松手后放下水果。</div>
       </div>
     </section>
 
     <aside class="panel side-panel">
       <h2>玩法说明</h2>
       <ul>
-        <li>鼠标移动可预览落点，左键、空格或回车投放当前水果。</li>
+        <li>鼠标移动可预览落点；左键在画布上点按松手、空格或回车投放当前水果。</li>
         <li>左右方向键或 A / D 可微调位置，手机上可用底部按钮操作。</li>
         <li>相同水果碰到一起会自动合成更大的水果，得分也会随之提高。</li>
         <li>如果水果持续顶住警戒线一段时间，游戏结束；不同难度的容错时间不同。</li>
@@ -745,6 +745,8 @@
     const FLOOR_BOUNCE = 0.16;
     const MOVE_STEP = 26;
     const DROP_COOLDOWN = 0.55;
+    /** 画布上按下后若移动超过该距离（CSS 像素），视为拖拽调位，松手不投放 */
+    const TAP_DROP_MAX_MOVE_PX = 14;
     const LOSE_GRACE_TIME = 2.5;
     const BEST_SCORE_KEY = "watermelon-web-best-score";
     const AUDIO_SETTINGS_KEY = "watermelon-web-audio-settings";
@@ -1693,7 +1695,22 @@
       return (event.clientX - rect.left) * scaleX;
     }
 
+    let canvasPointerDrop = null;
+
+    function releaseCanvasPointer(pointerId) {
+      try {
+        canvas.releasePointerCapture(pointerId);
+      } catch (_) {}
+    }
+
     canvas.addEventListener("pointermove", (event) => {
+      if (canvasPointerDrop && event.pointerId === canvasPointerDrop.pointerId) {
+        const dx = event.clientX - canvasPointerDrop.startX;
+        const dy = event.clientY - canvasPointerDrop.startY;
+        if (dx * dx + dy * dy > TAP_DROP_MAX_MOVE_PX * TAP_DROP_MAX_MOVE_PX) {
+          canvasPointerDrop.movedTooMuch = true;
+        }
+      }
       if (prefersTouchUI && event.pointerType === "touch") {
         event.preventDefault();
       }
@@ -1701,10 +1718,48 @@
     });
 
     canvas.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      if (canvasPointerDrop !== null) return;
       event.preventDefault();
       audio.ensureStarted();
       state.mouseX = clampSpawnX(pointerToCanvasX(event));
-      dropFruit();
+      canvasPointerDrop = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        movedTooMuch: false
+      };
+      try {
+        canvas.setPointerCapture(event.pointerId);
+      } catch (_) {}
+    });
+
+    function finishCanvasPointer(event, shouldDrop) {
+      if (!canvasPointerDrop || event.pointerId !== canvasPointerDrop.pointerId) {
+        return;
+      }
+      event.preventDefault();
+      const movedTooMuch = canvasPointerDrop.movedTooMuch;
+      canvasPointerDrop = null;
+      releaseCanvasPointer(event.pointerId);
+      state.mouseX = clampSpawnX(pointerToCanvasX(event));
+      if (shouldDrop && !movedTooMuch) {
+        dropFruit();
+      }
+    }
+
+    canvas.addEventListener("pointerup", (event) => {
+      finishCanvasPointer(event, true);
+    });
+
+    canvas.addEventListener("pointercancel", (event) => {
+      finishCanvasPointer(event, false);
+    });
+
+    canvas.addEventListener("lostpointercapture", (event) => {
+      if (canvasPointerDrop && event.pointerId === canvasPointerDrop.pointerId) {
+        canvasPointerDrop = null;
+      }
     });
 
     canvas.addEventListener("contextmenu", (event) => event.preventDefault());
